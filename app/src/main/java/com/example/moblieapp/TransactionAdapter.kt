@@ -31,7 +31,7 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionVi
 
         holder.tvNote.text = item.note
         holder.tvCategory.text = item.category
-        holder.tvDate.text = item.date // โชว์วันที่
+        holder.tvDate.text = item.date // โชว์วันที่ฝฝ
 
         if (item.type == 2) {
             holder.tvAmount.text = "- ${item.amount}"

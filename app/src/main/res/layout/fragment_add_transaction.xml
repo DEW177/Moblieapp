@@ -3,121 +3,156 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F4F4F4">
+    android:background="#FAFBFB"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:padding="28dp">
 
-        <!-- ปุ่ม รายรับ / รายจ่าย -->
+        <!-- ===== Segmented รายรับ / รายจ่าย ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:orientation="horizontal"
-            android:background="#78C2A4"
-            android:gravity="center">
+            android:background="#E6F4EF"
+            android:padding="6dp"
+            android:layout_marginBottom="28dp">
 
             <Button
                 android:id="@+id/btnIncome"
                 android:layout_width="0dp"
-                android:layout_height="50dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:text="รายรับ"
-                android:backgroundTint="#FFFFFF"
-                android:textColor="#000000"/>
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                android:textColor="#1B5E20"
+                android:backgroundTint="#FFFFFF"/>
 
             <Button
                 android:id="@+id/btnExpense"
                 android:layout_width="0dp"
-                android:layout_height="50dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:text="รายจ่าย"
-                android:backgroundTint="#DDDDDD"
-                android:textColor="#000000"/>
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#4DB6AC"/>
         </LinearLayout>
 
-        <!-- จำนวนเงิน -->
+        <!-- ===== จำนวนเงิน ===== -->
         <EditText
             android:id="@+id/edtAmount"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_marginTop="20dp"
+            android:layout_height="90dp"
             android:hint="฿ 0.00"
-            android:textSize="24sp"
+            android:textSize="30sp"
+            android:textStyle="bold"
             android:gravity="center"
             android:inputType="numberDecimal"
-            android:background="#B5EAD7"/>
+            android:textColor="#1B5E20"
+            android:background="#DFF5EE"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- ===== วันที่ ===== -->
         <TextView
             android:id="@+id/tvDate"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginTop="20dp"
+            android:layout_height="58dp"
             android:text="เลือกวันที่"
-            android:textSize="18sp"
-            android:gravity="center"
-            android:background="#DDDDDD"
-            android:textColor="#000000"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:gravity="center_vertical"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:background="#F0F3F5"
+            android:textColor="#37474F"
             android:drawableEnd="@android:drawable/ic_menu_today"
-            android:paddingEnd="16dp"/>
+            android:layout_marginBottom="26dp"/>
 
-        <!-- หมวดหมู่ -->
-
-        <!-- หมวดหมู่ -->
+        <!-- ===== หมวดหมู่ ===== -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="หมวดหมู่:"
-            android:textSize="16sp"
-            android:layout_marginTop="16dp"
-            android:textStyle="bold"/>
+            android:text="หมวดหมู่"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:textColor="#263238"
+            android:layout_marginBottom="14dp"/>
 
         <RadioGroup
             android:id="@+id/radioGroupIncome"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:visibility="gone">
-            <RadioButton android:id="@+id/rbSalary" android:text="เงินเดือน / เงินประจำ" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <RadioButton android:id="@+id/rbPartTime" android:text="พาร์ทไทม์ / ฟรีแลนซ์" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <RadioButton android:id="@+id/rbBonus" android:text="โบนัส / รางวัล" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <RadioButton android:id="@+id/rbIncomeOther" android:text="อื่นๆ" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            android:visibility="gone"
+            android:layout_marginBottom="12dp">
+
+            <RadioButton
+                android:id="@+id/rbSalary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="เงินเดือน / เงินประจำ"/>
+
+            <RadioButton
+                android:id="@+id/rbPartTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="พาร์ทไทม์ / ฟรีแลนซ์"/>
+
+            <RadioButton
+                android:id="@+id/rbBonus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="โบนัส / รางวัล"/>
+
+            <RadioButton
+                android:id="@+id/rbIncomeOther"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="อื่นๆ"/>
         </RadioGroup>
 
         <RadioGroup
             android:id="@+id/radioGroupExpense"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
-            <RadioButton android:id="@+id/rbFood" android:text="อาหารและเครื่องดื่ม" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <RadioButton android:id="@+id/rbTransport" android:text="การเดินทาง" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <RadioButton android:id="@+id/rbShopping" android:text="ช้อปปิ้ง" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <RadioButton android:id="@+id/rbExpenseOther" android:text="อื่นๆ" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            android:orientation="vertical"
+            android:layout_marginBottom="26dp">
+
+            <RadioButton android:id="@+id/rbFood" android:text="อาหารและเครื่องดื่ม"/>
+            <RadioButton android:id="@+id/rbTransport" android:text="การเดินทาง"/>
+            <RadioButton android:id="@+id/rbShopping" android:text="ช้อปปิ้ง"/>
+            <RadioButton android:id="@+id/rbExpenseOther" android:text="อื่นๆ"/>
         </RadioGroup>
 
-
-        <!-- หมายเหตุ -->
+        <!-- ===== หมายเหตุ ===== -->
         <EditText
             android:id="@+id/edtNote"
             android:layout_width="match_parent"
-            android:layout_height="120dp"
-            android:layout_marginTop="20dp"
-            android:hint="note"
-            android:background="#B5EAD7"
+            android:layout_height="130dp"
+            android:hint="เพิ่มหมายเหตุ..."
             android:gravity="top"
-            android:padding="10dp"/>
+            android:padding="18dp"
+            android:textColor="#263238"
+            android:background="#EAF7F3"
+            android:layout_marginBottom="40dp"/>
 
-        <!-- ปุ่มบันทึก -->
+        <!-- ===== ปุ่มบันทึก ===== -->
         <Button
             android:id="@+id/btnSave"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_marginTop="30dp"
+            android:layout_height="65dp"
             android:text="บันทึก"
+            android:textAllCaps="false"
             android:textSize="18sp"
-            android:backgroundTint="#78C2A4"
-            android:textColor="#000000"/>
+            android:textStyle="bold"
+            android:backgroundTint="#26A69A"
+            android:textColor="#FFFFFF"/>
 
     </LinearLayout>
 
