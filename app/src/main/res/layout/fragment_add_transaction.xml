@@ -68,41 +68,32 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="หมวดหมู่"
-            android:textSize="18sp"
-            android:layout_marginTop="20dp"/>
+            android:text="หมวดหมู่:"
+            android:textSize="16sp"
+            android:layout_marginTop="16dp"
+            android:textStyle="bold"/>
 
         <RadioGroup
-            android:id="@+id/radioGroupCategory"
+            android:id="@+id/radioGroupIncome"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+            <RadioButton android:id="@+id/rbSalary" android:text="เงินเดือน / เงินประจำ" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <RadioButton android:id="@+id/rbPartTime" android:text="พาร์ทไทม์ / ฟรีแลนซ์" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <RadioButton android:id="@+id/rbBonus" android:text="โบนัส / รางวัล" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <RadioButton android:id="@+id/rbIncomeOther" android:text="อื่นๆ" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+        </RadioGroup>
+
+        <RadioGroup
+            android:id="@+id/radioGroupExpense"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical">
-
-            <RadioButton
-                android:id="@+id/radioFood"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="อาหาร" />
-
-            <RadioButton
-                android:id="@+id/radioTravel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="เดินทาง" />
-
-            <RadioButton
-                android:id="@+id/radioShop"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ช้อปปิ้ง" />
-
-            <RadioButton
-                android:id="@+id/radioOther"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="อื่นๆ" />
-
+            <RadioButton android:id="@+id/rbFood" android:text="อาหารและเครื่องดื่ม" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <RadioButton android:id="@+id/rbTransport" android:text="การเดินทาง" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <RadioButton android:id="@+id/rbShopping" android:text="ช้อปปิ้ง" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <RadioButton android:id="@+id/rbExpenseOther" android:text="อื่นๆ" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
         </RadioGroup>
 
 
