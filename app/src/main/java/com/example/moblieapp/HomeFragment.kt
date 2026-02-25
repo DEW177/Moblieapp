@@ -32,7 +32,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         txtBalance = view.findViewById(R.id.txtBalance)
         txtIncome = view.findViewById(R.id.txtIncome)
         txtExpense = view.findViewById(R.id.txtExpense)
-        pieChart = view.findViewById(R.id.pieChart) // 🔥 เชื่อมกราฟ
+        pieChart = view.findViewById(R.id.pieChart) //
 
         btnHistoryTop?.setOnClickListener {
             parentFragmentManager.beginTransaction()
