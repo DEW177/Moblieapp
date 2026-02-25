@@ -49,6 +49,18 @@
             android:gravity="center"
             android:inputType="numberDecimal"
             android:background="#B5EAD7"/>
+        <TextView
+            android:id="@+id/tvDate"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="20dp"
+            android:text="เลือกวันที่"
+            android:textSize="18sp"
+            android:gravity="center"
+            android:background="#DDDDDD"
+            android:textColor="#000000"
+            android:drawableEnd="@android:drawable/ic_menu_today"
+            android:paddingEnd="16dp"/>
 
         <!-- หมวดหมู่ -->
 

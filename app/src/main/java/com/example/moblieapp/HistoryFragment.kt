@@ -28,7 +28,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         recyclerView.adapter = adapter
 
         // เมื่อมีการกดที่รายการใน Adapter
-        adapter.onItemClick = { transaction ->
+        adapter.onDeleteClick = { transaction ->
             showDeleteDialog(transaction)
         }
 

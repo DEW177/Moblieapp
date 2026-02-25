@@ -9,5 +9,6 @@ data class Transaction(
     val type: Int,          // 1 = รายรับ, 2 = รายจ่าย (หรือใช้ boolean ก็ได้)
     val amount: Double,
     val category: String,
-    val note: String
+    val note: String,
+    val date: String
 )

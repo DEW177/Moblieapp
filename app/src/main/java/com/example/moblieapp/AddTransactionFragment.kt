@@ -13,10 +13,15 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import android.app.DatePickerDialog
+import java.util.Calendar
+import android.widget.TextView
 
 class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
 
     // ประกาศตัวแปร View
+    private lateinit var tvDate: TextView
+    private var selectedDate: String = "" // เก็บค่าวันที่ที่เลือก
     private lateinit var btnIncome: Button
     private lateinit var btnExpense: Button
     private lateinit var edtAmount: EditText
@@ -42,8 +47,33 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         edtNote = view.findViewById(R.id.edtNote)
         btnSave = view.findViewById(R.id.btnSave)
 
+        // 🔥 เชื่อมตัวแปรวันที่
+        tvDate = view.findViewById(R.id.tvDate)
+
         // ตั้งค่าเริ่มต้น: ให้ปุ่มรายจ่ายเป็นสีเข้ม (Active)
         updateTypeSelection()
+
+        // 🔥 ตั้งค่าวันที่เริ่มต้นให้เป็น "วันนี้"
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+        selectedDate = "$day/${month + 1}/$year" // เดือนเริ่มจาก 0 เลยต้อง +1
+        tvDate.text = "วันที่: $selectedDate"
+
+        // 🔥 เมื่อกดปุ่มวันที่ ให้โชว์ Date Picker (ปฏิทิน)
+        tvDate.setOnClickListener {
+            val datePickerDialog = DatePickerDialog(
+                requireContext(),
+                { _, selectedYear, selectedMonth, selectedDay ->
+                    selectedDate = "$selectedDay/${selectedMonth + 1}/$selectedYear"
+                    tvDate.text = "วันที่: $selectedDate"
+                },
+                year, month, day
+            )
+            datePickerDialog.show()
+        }
     }
 
     private fun setupListeners() {
@@ -98,7 +128,7 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         var category = "อื่นๆ"
         if (selectedId != -1) {
             val selectedRadioButton = view?.findViewById<RadioButton>(selectedId)
-            category = selectedRadioButton?.text.toString()
+            category = selectedRadioButton?.text.toString() ?: "อื่นๆ"
         }
 
         // 3. ดึง Note
@@ -109,20 +139,19 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         val type = if (isExpense) 2 else 1
 
         // 5. สร้าง Object เตรียมบันทึก
+        // 🔥 เพิ่มการส่งค่า date เข้าไปใน Database
         val transaction = Transaction(
             type = type,
             amount = amount,
             category = category,
-            note = note
+            note = note,
+            date = selectedDate
         )
 
         // 6. *** บันทึกลง Database (ต้องทำใน Background Thread) ***
-        // เรียกใช้ Database
         val db = AppDatabase.getDatabase(requireContext())
 
-        // ใช้ lifecycleScope เพื่อสั่งงาน Database
         lifecycleScope.launch(Dispatchers.IO) {
-
             // สั่ง Insert ลงตาราง
             db.transactionDao().insertTransaction(transaction)
 
