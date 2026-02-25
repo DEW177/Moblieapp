@@ -45,19 +45,19 @@
                 android:layout_marginTop="20dp">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:id="@+id/txtIncome"  android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="รายรับ\n+ 10,000"
+                    android:text="รายรับ\n+ 0.00"
                     android:textSize="16sp"
                     android:textColor="#000000"/>
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:id="@+id/txtExpense"  android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="end"
-                    android:text="รายจ่าย\n- 10,000"
+                    android:text="รายจ่าย\n- 0.00"
                     android:textSize="16sp"
                     android:textColor="#000000"/>
             </LinearLayout>
