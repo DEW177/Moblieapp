@@ -28,8 +28,22 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         recyclerView.adapter = adapter
 
         // เมื่อมีการกดที่รายการใน Adapter
-        adapter.onDeleteClick = { transaction ->
-            showDeleteDialog(transaction)
+        adapter.onItemClick = { transaction ->
+            val bundle = Bundle()
+            bundle.putInt("id", transaction.id)
+            bundle.putInt("type", transaction.type)
+            bundle.putDouble("amount", transaction.amount)
+            bundle.putString("category", transaction.category)
+            bundle.putString("note", transaction.note)
+            bundle.putString("date", transaction.date)
+
+            val addFragment = AddTransactionFragment()
+            addFragment.arguments = bundle // แนบกระเป๋าข้อมูลไปด้วย
+
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainerView, addFragment)
+                .addToBackStack(null)
+                .commit()
         }
 
         loadData()

@@ -12,6 +12,7 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionVi
 
     private var transactionList = listOf<Transaction>()
     var onDeleteClick: ((Transaction) -> Unit)? = null
+    var onItemClick: ((Transaction) -> Unit)? = null
 
     fun setData(list: List<Transaction>) {
         transactionList = list
@@ -42,6 +43,9 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionVi
 
         holder.btnDeleteIcon.setOnClickListener {
             onDeleteClick?.invoke(item)
+        }
+        holder.itemView.setOnClickListener {
+            onItemClick?.invoke(item)
         }
     }
 
