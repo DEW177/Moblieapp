@@ -21,13 +21,17 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // ตั้งค่า RecyclerView
         recyclerView = view.findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         adapter = TransactionAdapter()
         recyclerView.adapter = adapter
 
-        // เมื่อมีการกดที่รายการใน Adapter
+        // 🔥 คำสั่งที่ 1: เมื่อกดรูปถังขยะ ให้โชว์หน้าต่างยืนยันการลบ
+        adapter.onDeleteClick = { transaction ->
+            showDeleteDialog(transaction)
+        }
+
+        // 🔥 คำสั่งที่ 2: เมื่อกดที่ตัวรายการ ให้ส่งข้อมูลไปหน้าแก้ไข
         adapter.onItemClick = { transaction ->
             val bundle = Bundle()
             bundle.putInt("id", transaction.id)
@@ -38,7 +42,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             bundle.putString("date", transaction.date)
 
             val addFragment = AddTransactionFragment()
-            addFragment.arguments = bundle // แนบกระเป๋าข้อมูลไปด้วย
+            addFragment.arguments = bundle
 
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainerView, addFragment)
@@ -64,39 +68,27 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         }
     }
 
+    // ฟังก์ชันโชว์หน้าต่างลบ
     private fun showDeleteDialog(transaction: Transaction) {
-        // Inflate หน้าตา Dialog ที่คุณสร้างไว้
         val dialogView = layoutInflater.inflate(R.layout.dialog_delete, null)
-
-        val dialog = AlertDialog.Builder(requireContext())
-            .setView(dialogView)
-            .setCancelable(true)
-            .create()
-
+        val dialog = AlertDialog.Builder(requireContext()).setView(dialogView).create()
         dialog.show()
 
-        val btnNo = dialogView.findViewById<Button>(R.id.btnNo)
-        val btnYes = dialogView.findViewById<Button>(R.id.btnYes)
-
-        btnNo.setOnClickListener {
-            dialog.dismiss()
-        }
-
-        btnYes.setOnClickListener {
-            deleteTransaction(transaction)
+        dialogView.findViewById<Button>(R.id.btnNo).setOnClickListener { dialog.dismiss() }
+        dialogView.findViewById<Button>(R.id.btnYes).setOnClickListener {
+            deleteFromDb(transaction)
             dialog.dismiss()
         }
     }
 
-    private fun deleteTransaction(transaction: Transaction) {
+    // ฟังก์ชันสั่งลบจาก Database
+    private fun deleteFromDb(transaction: Transaction) {
         lifecycleScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(requireContext())
-            // คำสั่งลบใน Room Database
             db.transactionDao().deleteTransaction(transaction)
-
             withContext(Dispatchers.Main) {
-                Toast.makeText(requireContext(), "ลบรายการเรียบร้อย", Toast.LENGTH_SHORT).show()
-                loadData() // โหลดข้อมูลใหม่ทันทีหลังลบเสร็จ
+                Toast.makeText(requireContext(), "ลบแล้ว", Toast.LENGTH_SHORT).show()
+                loadData()
             }
         }
     }

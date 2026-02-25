@@ -5,8 +5,9 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [Transaction::class], version = 1)
+@Database(entities = [Transaction::class], version = 2)
 abstract class AppDatabase : RoomDatabase() {
+
     abstract fun transactionDao(): TransactionDao
 
     companion object {
@@ -17,8 +18,12 @@ abstract class AppDatabase : RoomDatabase() {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
-                    AppDatabase::class.java,"expense_database"//sdsdsadsaadsad
-                ).build()
+                    AppDatabase::class.java,
+                    "expense_database"
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
+
                 INSTANCE = instance
                 instance
             }
