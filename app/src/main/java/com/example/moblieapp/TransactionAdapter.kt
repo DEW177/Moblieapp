@@ -11,6 +11,8 @@ import androidx.recyclerview.widget.RecyclerView
 class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
 
     private var transactionList = listOf<Transaction>()
+
+    // ประกาศตัวแปรแยกกันชัดเจน
     var onDeleteClick: ((Transaction) -> Unit)? = null
     var onItemClick: ((Transaction) -> Unit)? = null
 
@@ -29,9 +31,7 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionVi
 
         holder.tvNote.text = item.note
         holder.tvCategory.text = item.category
-
-        // 🔥 สั่งให้แสดงวันที่
-        holder.tvDate.text = item.date
+        holder.tvDate.text = item.date // โชว์วันที่
 
         if (item.type == 2) {
             holder.tvAmount.text = "- ${item.amount}"
@@ -41,9 +41,12 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionVi
             holder.tvAmount.setTextColor(Color.parseColor("#4CAF50"))
         }
 
+        // 1. กดที่ถังขยะ = สั่งลบ
         holder.btnDeleteIcon.setOnClickListener {
             onDeleteClick?.invoke(item)
         }
+
+        // 2. กดที่บริเวณอื่นของแถว = สั่งแก้ไข
         holder.itemView.setOnClickListener {
             onItemClick?.invoke(item)
         }
@@ -55,7 +58,6 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionVi
         val tvNote: TextView = itemView.findViewById(R.id.tvNote)
         val tvCategory: TextView = itemView.findViewById(R.id.tvCategory)
         val tvAmount: TextView = itemView.findViewById(R.id.tvAmount)
-        // 🔥 ประกาศตัวแปรรับ tvDate
         val tvDate: TextView = itemView.findViewById(R.id.tvDate)
         val btnDeleteIcon: ImageView = itemView.findViewById(R.id.btnDeleteIcon)
     }
