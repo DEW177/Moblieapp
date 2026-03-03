@@ -56,7 +56,8 @@
             android:inputType="numberDecimal"
             android:textColor="#1B5E20"
             android:background="#DFF5EE"
-            android:layout_marginBottom="24dp"/>
+            android:layout_marginBottom="24dp"
+            android:fontFamily="@font/sarabunbold"/>
 
         <!-- ===== วันที่ ===== -->
         <TextView
