@@ -1,9 +1,9 @@
-
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/fragment_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:background="#FAFFFB">
+
     <FrameLayout
         android:id="@+id/fragmentContainerView"
         android:layout_width="match_parent"
@@ -16,10 +16,10 @@
         android:layout_width="match_parent"
         android:layout_height="95dp"
         android:layout_gravity="bottom"
-        android:background="#FFFFFF"
+        android:background="#FAFFFB"
         android:orientation="horizontal"
         android:gravity="center"
-        android:elevation="12dp"
+        android:elevation="8dp"
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
         android:paddingTop="14dp"
@@ -33,9 +33,9 @@
             android:layout_marginEnd="10dp"
             android:text="Home"
             android:textAllCaps="false"
-            android:textColor="#5E548E"
+            android:textColor="#2E7D32"
             android:textSize="14sp"
-            android:backgroundTint="#F2F0FF"/>
+            android:backgroundTint="#E8F5E9"/>
 
         <Button
             android:id="@+id/btnAddMain"
@@ -47,8 +47,7 @@
             android:textAllCaps="false"
             android:textColor="#FFFFFF"
             android:textSize="22sp"
-            android:textStyle="bold"
-            android:backgroundTint="#7F6DF2"/>
+            android:backgroundTint="#2E7D32"/>
 
         <Button
             android:id="@+id/btnHistory"
@@ -57,9 +56,9 @@
             android:layout_weight="1"
             android:text="History"
             android:textAllCaps="false"
-            android:textColor="#5E548E"
+            android:textColor="#2E7D32"
             android:textSize="14sp"
-            android:backgroundTint="#F2F0FF"/>
+            android:backgroundTint="#E8F5E9"/>
 
     </LinearLayout>
 
