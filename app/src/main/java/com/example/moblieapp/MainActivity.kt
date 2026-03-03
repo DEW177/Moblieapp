@@ -1,4 +1,3 @@
-//แก้ในส่วนนี้ 3/3/26
 package com.example.moblieapp
 
 import android.os.Bundle
@@ -8,14 +7,13 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
-    // 🔹 เพิ่มตัวแปรนี้
     lateinit var bottomMenu: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 🔹 ผูก bottomMenu กับ id ที่เราเพิ่มใน XML
+        // ผูก bottomMenu กับ ID แท็กนอกสุดที่ครอบเมนูไว้
         bottomMenu = findViewById(R.id.bottomMenu)
 
         if (savedInstanceState == null) {
@@ -23,7 +21,7 @@ class MainActivity : AppCompatActivity() {
                 .replace(R.id.fragmentContainerView, WelcomeFragment())
                 .commit()
 
-            // 🔥 ซ่อนตอนเริ่มแอป
+
             bottomMenu.visibility = View.GONE
         }
 
@@ -33,9 +31,7 @@ class MainActivity : AppCompatActivity() {
 
         btnHome.setOnClickListener {
 
-            // 🔥 แสดงเมนูเมื่อเข้า Home
             bottomMenu.visibility = View.VISIBLE
-
             supportFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainerView, HomeFragment())
                 .commit()
@@ -44,7 +40,6 @@ class MainActivity : AppCompatActivity() {
         btnAdd.setOnClickListener {
 
             bottomMenu.visibility = View.VISIBLE
-
             supportFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainerView, AddTransactionFragment())
                 .commit()
@@ -53,7 +48,6 @@ class MainActivity : AppCompatActivity() {
         btnHistory.setOnClickListener {
 
             bottomMenu.visibility = View.VISIBLE
-
             supportFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainerView, HistoryFragment())
                 .commit()
