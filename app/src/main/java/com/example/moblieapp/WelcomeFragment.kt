@@ -17,12 +17,20 @@ class WelcomeFragment : Fragment(R.layout.fragment_welcome) {
         init(view)
 
         // 3. ตั้งค่าปุ่ม (ใช้ !! เหมือน MainMenu เพื่อยืนยันว่าไม่ null)
+
+        // 3/3/26
         btnStart!!.setOnClickListener {
+
+            // 🔥 แสดง bottom menu ก่อนเปลี่ยนหน้า
+            requireActivity()
+                .findViewById<View>(R.id.bottomMenu)
+                .visibility = View.VISIBLE
+
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainerView, HomeFragment())
-                .addToBackStack(null)
                 .commit()
         }
+
     }
 
     // 4. สร้างฟังก์ชัน init
