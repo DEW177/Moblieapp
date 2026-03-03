@@ -15,9 +15,53 @@
         android:textStyle="bold"
         android:layout_marginBottom="16dp"/>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
+    <Spinner
+        android:id="@+id/spinnerMonth"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="50dp"
+        android:layout_marginBottom="12dp"
+        android:background="#FFFFFF"/>
 
+    <EditText
+        android:id="@+id/edtSearch"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginBottom="16dp"
+        android:background="#FFFFFF"
+        android:hint="🔍 ค้นหา (พิมพ์หมายเหตุหรือหมวดหมู่)"
+        android:padding="12dp"
+        android:singleLine="true"/>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:id="@+id/layoutEmptyState"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📭"
+                android:textSize="64sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ไม่มีประวัติรายการ"
+                android:textSize="18sp"
+                android:textColor="#888888"
+                android:layout_marginTop="8dp" />
+        </LinearLayout>
+    </FrameLayout>
 </LinearLayout>

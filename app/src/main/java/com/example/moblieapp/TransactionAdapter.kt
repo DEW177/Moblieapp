@@ -12,7 +12,6 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionVi
 
     private var transactionList = listOf<Transaction>()
 
-    // ประกาศตัวแปรแยกกันชัดเจน
     var onDeleteClick: ((Transaction) -> Unit)? = null
     var onItemClick: ((Transaction) -> Unit)? = null
 
@@ -30,8 +29,22 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionVi
         val item = transactionList[position]
 
         holder.tvNote.text = item.note
-        holder.tvCategory.text = item.category
-        holder.tvDate.text = item.date // โชว์วันที่ฝฝ
+
+        // 🔥 เพิ่มเงื่อนไขเช็คหมวดหมู่เพื่อกำหนดไอคอน (Emoji)
+        val categoryIcon = when (item.category) {
+            "อาหารและเครื่องดื่ม" -> "🍜"
+            "การเดินทาง" -> "🚗"
+            "ช้อปปิ้ง" -> "🛍️"
+            "เงินเดือน / เงินประจำ" -> "💰"
+            "พาร์ทไทม์ / ฟรีแลนซ์" -> "💻"
+            "โบนัส / รางวัล" -> "🎁"
+            else -> "📝" // สำหรับหมวดหมู่ "อื่นๆ" หรือหมวดหมู่ที่ไม่ได้กำหนดไว้
+        }
+
+        // นำ Emoji มาแสดงผลคู่กับชื่อหมวดหมู่
+        holder.tvCategory.text = "$categoryIcon ${item.category}"
+
+        holder.tvDate.text = item.date
 
         if (item.type == 2) {
             holder.tvAmount.text = "- ${item.amount}"
@@ -41,12 +54,10 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionVi
             holder.tvAmount.setTextColor(Color.parseColor("#4CAF50"))
         }
 
-        // 1. กดที่ถังขยะ = สั่งลบ
         holder.btnDeleteIcon.setOnClickListener {
             onDeleteClick?.invoke(item)
         }
 
-        // 2. กดที่บริเวณอื่นของแถว = สั่งแก้ไข
         holder.itemView.setOnClickListener {
             onItemClick?.invoke(item)
         }
