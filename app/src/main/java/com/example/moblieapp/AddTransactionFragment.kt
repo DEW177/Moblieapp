@@ -26,20 +26,19 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
     private var selectedDate: String = ""
     private lateinit var btnIncome: Button
     private lateinit var btnExpense: Button
+    private lateinit var btnTransfer: Button
     private lateinit var edtAmount: EditText
-
     private lateinit var radioGroupIncome: RadioGroup
     private lateinit var radioGroupExpense: RadioGroup
-
     private lateinit var edtNote: EditText
     private lateinit var btnSave: Button
-
-    // 🔥 ตัวแปรสำหรับกระเป๋าเงิน
     private lateinit var spinnerWallet: Spinner
+    private lateinit var spinnerToWallet: Spinner
+    private lateinit var tvToWalletLabel: TextView
     private var walletList = listOf<Wallet>()
     private var selectedWalletIdFromEdit: Int = 0
-
     private var isExpense: Boolean = true
+    private var isTransfer: Boolean = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -50,14 +49,16 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
     private fun init(view: View) {
         btnIncome = view.findViewById(R.id.btnIncome)
         btnExpense = view.findViewById(R.id.btnExpense)
+        btnTransfer = view.findViewById(R.id.btnTransfer)
         edtAmount = view.findViewById(R.id.edtAmount)
         radioGroupIncome = view.findViewById(R.id.radioGroupIncome)
         radioGroupExpense = view.findViewById(R.id.radioGroupExpense)
         edtNote = view.findViewById(R.id.edtNote)
         btnSave = view.findViewById(R.id.btnSave)
         tvDate = view.findViewById(R.id.tvDate)
-
-        spinnerWallet = view.findViewById(R.id.spinnerWallet) // 🔥 เชื่อม Spinner
+        spinnerWallet = view.findViewById(R.id.spinnerWallet)
+        spinnerToWallet = view.findViewById(R.id.spinnerToWallet)
+        tvToWalletLabel = view.findViewById(R.id.tvToWalletLabel)
 
         updateTypeSelection()
 
@@ -89,10 +90,10 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
                 updateTypeSelection()
 
                 val amountVal = bundle.getDouble("amount", 0.0)
-                edtAmount.setText(if(amountVal % 1.0 == 0.0) amountVal.toInt().toString() else amountVal.toString())
+                edtAmount.setText(if (amountVal % 1.0 == 0.0) amountVal.toInt().toString() else amountVal.toString())
 
                 edtNote.setText(bundle.getString("note", ""))
-                selectedWalletIdFromEdit = bundle.getInt("walletId", 0) // 🔥 รับค่ากระเป๋าเดิมตอนกดแก้ไข
+                selectedWalletIdFromEdit = bundle.getInt("walletId", 0)
 
                 val dateStr = bundle.getString("date", "")
                 if (dateStr.isNotEmpty()) {
@@ -115,74 +116,114 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
             }
         }
 
-        loadWallets() // 🔥 เรียกใช้งานโหลดกระเป๋าเงิน
+        loadWallets()
     }
 
-    // 🔥 ฟังก์ชันโหลดและสร้างกระเป๋าเงิน
     private fun loadWallets() {
         lifecycleScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(requireContext())
             var wallets = db.walletDao().getAllWallets()
 
-            // ถ้าไม่มีกระเป๋าเลย (เปิดแอปครั้งแรก) ให้สร้างขึ้นมา 3 ใบ
             if (wallets.isEmpty()) {
                 db.walletDao().insertWallet(Wallet(name = "เงินสด", type = 0, balance = 0.0))
                 db.walletDao().insertWallet(Wallet(name = "บัญชีธนาคาร", type = 0, balance = 0.0))
-                db.walletDao().insertWallet(Wallet(name = "บัตรเครดิต", type = 1, balance = 0.0)) // type 1 คือหนี้
+                db.walletDao().insertWallet(Wallet(name = "บัตรเครดิต", type = 1, balance = 0.0))
                 wallets = db.walletDao().getAllWallets()
             }
 
             walletList = wallets
 
             withContext(Dispatchers.Main) {
-                val walletNames = walletList.map { it.name }
-                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, walletNames)
-                spinnerWallet.adapter = adapter
+                updateWalletSpinner()
 
-                // ถ้าเป็นการกดแก้ไขรายการ ให้เซ็ต Spinner ไปที่กระเป๋าที่เคยเลือกไว้
+                // spinnerToWallet ใช้ทุกกระเป๋า
+                val allWalletNames = walletList.map {
+                    if (it.type == 0) "💰 ${it.name}" else "💳 ${it.name}"
+                }
+                val adapterTo = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, allWalletNames)
+                spinnerToWallet.adapter = adapterTo
+
                 if (selectedWalletIdFromEdit != 0) {
                     val selectedIndex = walletList.indexOfFirst { it.id == selectedWalletIdFromEdit }
-                    if (selectedIndex >= 0) {
-                        spinnerWallet.setSelection(selectedIndex)
-                    }
+                    if (selectedIndex >= 0) spinnerWallet.setSelection(selectedIndex)
                 }
             }
         }
     }
 
+    private fun updateWalletSpinner() {
+        if (walletList.isEmpty()) return
+
+        val filteredWallets = if (isExpense || isTransfer) {
+            walletList
+        } else {
+            walletList.filter { it.type == 0 } // รายรับ เลือกได้แค่กระเป๋าธรรมดา
+        }
+
+        val walletNames = filteredWallets.map {
+            if (it.type == 0) "💰 ${it.name}" else "💳 ${it.name}"
+        }
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, walletNames)
+        spinnerWallet.adapter = adapter
+    }
+
     private fun setupListeners() {
         btnIncome.setOnClickListener {
             isExpense = false
+            isTransfer = false
             updateTypeSelection()
+            updateWalletSpinner()
         }
 
         btnExpense.setOnClickListener {
             isExpense = true
+            isTransfer = false
             updateTypeSelection()
+            updateWalletSpinner()
         }
 
-        btnSave.setOnClickListener {
-            saveTransaction()
+        btnTransfer.setOnClickListener {
+            isTransfer = true
+            updateTypeSelection()
+            updateWalletSpinner()
         }
+
+        btnSave.setOnClickListener { saveTransaction() }
     }
 
     private fun updateTypeSelection() {
-        if (isExpense) {
-            btnExpense.setBackgroundColor(Color.parseColor("#78C2A4"))
-            btnExpense.setTextColor(Color.WHITE)
-            btnIncome.setBackgroundColor(Color.parseColor("#DDDDDD"))
-            btnIncome.setTextColor(Color.BLACK)
+        val activeColor = Color.parseColor("#78C2A4")
+        val inactiveColor = Color.parseColor("#DDDDDD")
 
-            radioGroupExpense.visibility = View.VISIBLE
-            radioGroupIncome.visibility = View.GONE
-        } else {
-            btnIncome.setBackgroundColor(Color.parseColor("#78C2A4"))
-            btnIncome.setTextColor(Color.WHITE)
-            btnExpense.setBackgroundColor(Color.parseColor("#DDDDDD"))
-            btnExpense.setTextColor(Color.BLACK)
+        btnIncome.setBackgroundColor(inactiveColor)
+        btnIncome.setTextColor(Color.BLACK)
+        btnExpense.setBackgroundColor(inactiveColor)
+        btnExpense.setTextColor(Color.BLACK)
+        btnTransfer.setBackgroundColor(inactiveColor)
+        btnTransfer.setTextColor(Color.BLACK)
 
-            radioGroupIncome.visibility = View.VISIBLE
-            radioGroupExpense.visibility = View.GONE
+        radioGroupExpense.visibility = View.GONE
+        radioGroupIncome.visibility = View.GONE
+        spinnerToWallet.visibility = View.GONE
+        tvToWalletLabel.visibility = View.GONE
+
+        when {
+            isTransfer -> {
+                btnTransfer.setBackgroundColor(activeColor)
+                btnTransfer.setTextColor(Color.WHITE)
+                spinnerToWallet.visibility = View.VISIBLE
+                tvToWalletLabel.visibility = View.VISIBLE
+            }
+            isExpense -> {
+                btnExpense.setBackgroundColor(activeColor)
+                btnExpense.setTextColor(Color.WHITE)
+                radioGroupExpense.visibility = View.VISIBLE
+            }
+            else -> {
+                btnIncome.setBackgroundColor(activeColor)
+                btnIncome.setTextColor(Color.WHITE)
+                radioGroupIncome.visibility = View.VISIBLE
+            }
         }
     }
 
@@ -194,6 +235,45 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         }
         val amount = amountText.toDouble()
 
+        // 🔥 ใช้ filtered list ให้ตรงกับ spinner ที่แสดงอยู่
+        val filteredWallets = if (isExpense || isTransfer) walletList else walletList.filter { it.type == 0 }
+        val selectedWalletIndex = spinnerWallet.selectedItemPosition
+        val targetWalletId = if (selectedWalletIndex >= 0 && filteredWallets.isNotEmpty())
+            filteredWallets[selectedWalletIndex].id else 1
+
+        if (isTransfer) {
+            val toWalletIndex = spinnerToWallet.selectedItemPosition
+            val toWalletId = if (toWalletIndex >= 0 && walletList.isNotEmpty())
+                walletList[toWalletIndex].id else 1
+
+            if (targetWalletId == toWalletId) {
+                Toast.makeText(requireContext(), "กระเป๋าต้นทางและปลายทางต้องไม่เหมือนกัน", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            val transaction = Transaction(
+                id = currentTransactionId,
+                type = 3,
+                amount = amount,
+                category = "โอนเงิน",
+                note = edtNote.text.toString(),
+                date = selectedDate,
+                walletId = targetWalletId,
+                toWalletId = toWalletId
+            )
+
+            val db = AppDatabase.getDatabase(requireContext())
+            lifecycleScope.launch(Dispatchers.IO) {
+                db.transactionDao().insertTransaction(transaction)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(requireContext(), "โอนเงินเรียบร้อย", Toast.LENGTH_SHORT).show()
+                    parentFragmentManager.popBackStack()
+                }
+            }
+            return
+        }
+
+        // Income / Expense
         val activeRadioGroup = if (isExpense) radioGroupExpense else radioGroupIncome
         val selectedId = activeRadioGroup.checkedRadioButtonId
         var category = "อื่นๆ"
@@ -202,35 +282,24 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
             category = selectedRadioButton?.text.toString() ?: "อื่นๆ"
         }
 
-        val note = edtNote.text.toString()
         val type = if (isExpense) 2 else 1
-
-        // 🔥 ดึง ID ของกระเป๋าที่ถูกเลือก
-        val selectedWalletIndex = spinnerWallet.selectedItemPosition
-        var targetWalletId = 1
-        if (selectedWalletIndex >= 0 && walletList.isNotEmpty()) {
-            targetWalletId = walletList[selectedWalletIndex].id
-        }
-
         val transaction = Transaction(
             id = currentTransactionId,
             type = type,
             amount = amount,
             category = category,
-            note = note,
+            note = edtNote.text.toString(),
             date = selectedDate,
-            walletId = targetWalletId // 🔥 ใส่ค่ากระเป๋าเงินลงไป (เส้นแดงจะหายไปแล้ว)
+            walletId = targetWalletId
         )
 
         val db = AppDatabase.getDatabase(requireContext())
-
         lifecycleScope.launch(Dispatchers.IO) {
             if (currentTransactionId == 0) {
                 db.transactionDao().insertTransaction(transaction)
             } else {
                 db.transactionDao().updateTransaction(transaction)
             }
-
             withContext(Dispatchers.Main) {
                 val message = if (currentTransactionId == 0) "บันทึกข้อมูลเรียบร้อย" else "อัปเดตข้อมูลเรียบร้อย"
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()

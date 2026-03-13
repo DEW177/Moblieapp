@@ -12,6 +12,7 @@
         android:orientation="vertical"
         android:padding="28dp">
 
+        <!-- 🔥 เพิ่มปุ่ม Transfer -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="60dp"
@@ -41,6 +42,17 @@
                 android:textStyle="bold"
                 android:textColor="#FFFFFF"
                 android:backgroundTint="#4DB6AC"/>
+
+            <Button
+                android:id="@+id/btnTransfer"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="โอนเงิน"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                android:textColor="#1B5E20"
+                android:backgroundTint="#FFFFFF"/>
         </LinearLayout>
 
         <EditText
@@ -71,6 +83,7 @@
             android:textColor="#37474F"
             android:drawableEnd="@android:drawable/ic_menu_today"
             android:layout_marginBottom="26dp"/>
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -86,6 +99,26 @@
             android:layout_height="50dp"
             android:background="#F0F3F5"
             android:layout_marginBottom="26dp"/>
+
+        <!-- 🔥 Spinner ปลายทาง ซ่อนไว้ก่อน แสดงเฉพาะตอนเลือก Transfer -->
+        <TextView
+            android:id="@+id/tvToWalletLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="โอนไปยังกระเป๋า"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:textColor="#263238"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone"/>
+
+        <Spinner
+            android:id="@+id/spinnerToWallet"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="#F0F3F5"
+            android:layout_marginBottom="26dp"
+            android:visibility="gone"/>
 
         <TextView
             android:layout_width="wrap_content"
@@ -171,16 +204,18 @@
             android:textColor="#263238"
             android:background="#EAF7F3"
             android:inputType="textMultiLine"
-            android:layout_marginBottom="40dp"/> <Button
-        android:id="@+id/btnSave"
-        android:layout_width="match_parent"
-        android:layout_height="65dp"
-        android:text="บันทึก"
-        android:textAllCaps="false"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:backgroundTint="#26A69A"
-        android:textColor="#FFFFFF"/>
+            android:layout_marginBottom="40dp"/>
+
+        <Button
+            android:id="@+id/btnSave"
+            android:layout_width="match_parent"
+            android:layout_height="65dp"
+            android:text="บันทึก"
+            android:textAllCaps="false"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:backgroundTint="#26A69A"
+            android:textColor="#FFFFFF"/>
 
     </LinearLayout>
 

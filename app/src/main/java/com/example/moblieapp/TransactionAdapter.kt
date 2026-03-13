@@ -11,12 +11,15 @@ import androidx.recyclerview.widget.RecyclerView
 class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
 
     private var transactionList = listOf<Transaction>()
+    private var walletMap = mapOf<Int, Wallet>() // 🔥 เพิ่มตัวแปรเก็บข้อมูลกระเป๋า
 
     var onDeleteClick: ((Transaction) -> Unit)? = null
     var onItemClick: ((Transaction) -> Unit)? = null
 
-    fun setData(list: List<Transaction>) {
+    // 🔥 แก้ให้รับข้อมูลกระเป๋าเงินเข้ามาด้วย
+    fun setData(list: List<Transaction>, wallets: List<Wallet>) {
         transactionList = list
+        walletMap = wallets.associateBy { it.id } // แปลงเป็น Map เพื่อให้ค้นหาง่ายขึ้น
         notifyDataSetChanged()
     }
 
@@ -30,7 +33,6 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionVi
 
         holder.tvNote.text = item.note
 
-        // 🔥 เพิ่มเงื่อนไขเช็คหมวดหมู่เพื่อกำหนดไอคอน (Emoji)
         val categoryIcon = when (item.category) {
             "อาหารและเครื่องดื่ม" -> "🍜"
             "การเดินทาง" -> "🚗"
@@ -38,13 +40,25 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionVi
             "เงินเดือน / เงินประจำ" -> "💰"
             "พาร์ทไทม์ / ฟรีแลนซ์" -> "💻"
             "โบนัส / รางวัล" -> "🎁"
-            else -> "📝" // สำหรับหมวดหมู่ "อื่นๆ" หรือหมวดหมู่ที่ไม่ได้กำหนดไว้
+            else -> "📝"
         }
 
-        // นำ Emoji มาแสดงผลคู่กับชื่อหมวดหมู่
         holder.tvCategory.text = "$categoryIcon ${item.category}"
-
         holder.tvDate.text = item.date
+
+        // 🔥 ดึงชื่อและประเภทกระเป๋ามาแสดง
+        val wallet = walletMap[item.walletId]
+        if (wallet != null) {
+            if (wallet.type == 0) {
+                holder.tvWallet.text = "💰 ${wallet.name} (พื้นฐาน)"
+                holder.tvWallet.setTextColor(Color.parseColor("#455A64"))
+            } else {
+                holder.tvWallet.text = "💳 ${wallet.name} (เครดิต)"
+                holder.tvWallet.setTextColor(Color.parseColor("#E57373"))
+            }
+        } else {
+            holder.tvWallet.text = "❓ ไม่พบกระเป๋า"
+        }
 
         if (item.type == 2) {
             holder.tvAmount.text = "- ${item.amount}"
@@ -68,6 +82,7 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionVi
     class TransactionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvNote: TextView = itemView.findViewById(R.id.tvNote)
         val tvCategory: TextView = itemView.findViewById(R.id.tvCategory)
+        val tvWallet: TextView = itemView.findViewById(R.id.tvWallet) // 🔥 เชื่อมต่อ UI
         val tvAmount: TextView = itemView.findViewById(R.id.tvAmount)
         val tvDate: TextView = itemView.findViewById(R.id.tvDate)
         val btnDeleteIcon: ImageView = itemView.findViewById(R.id.btnDeleteIcon)

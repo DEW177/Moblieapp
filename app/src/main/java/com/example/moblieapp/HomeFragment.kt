@@ -61,27 +61,37 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             val expenseMap = mutableMapOf<String, Float>()
 
             val walletBalances = mutableMapOf<Int, Double>()
+            val walletTypes = mutableMapOf<Int, Int>()
+
             for (w in wallets) {
                 walletBalances[w.id] = w.balance
+                walletTypes[w.id] = w.type
             }
 
             for (t in transactions) {
-                if (t.type == 1) {
-                    totalIncome += t.amount
-                    walletBalances[t.walletId] = (walletBalances[t.walletId] ?: 0.0) + t.amount
-                } else if (t.type == 2) {
-                    totalExpense += t.amount
-                    walletBalances[t.walletId] = (walletBalances[t.walletId] ?: 0.0) - t.amount
+                val walletType = walletTypes[t.walletId] ?: 0
 
-                    val currentAmount = expenseMap[t.category] ?: 0f
-                    expenseMap[t.category] = currentAmount + t.amount.toFloat()
+                when (t.type) {
+                    1 -> { // รายรับ
+                        walletBalances[t.walletId] = (walletBalances[t.walletId] ?: 0.0) + t.amount
+                        if (walletType == 0) totalIncome += t.amount
+                    }
+                    2 -> { // รายจ่าย
+                        walletBalances[t.walletId] = (walletBalances[t.walletId] ?: 0.0) - t.amount
+                        totalExpense += t.amount
+                        val currentAmount = expenseMap[t.category] ?: 0f
+                        expenseMap[t.category] = currentAmount + t.amount.toFloat()
+                    }
+                    3 -> { // โอนเงิน — ไม่นับรายรับ/รายจ่าย
+                        walletBalances[t.walletId] = (walletBalances[t.walletId] ?: 0.0) - t.amount
+                        t.toWalletId?.let { toId ->
+                            walletBalances[toId] = (walletBalances[toId] ?: 0.0) + t.amount
+                        }
+                    }
                 }
             }
 
-            var netWorth = 0.0
-            for (w in wallets) {
-                netWorth += walletBalances[w.id] ?: 0.0
-            }
+            val netWorth = walletBalances.values.sum()
 
             withContext(Dispatchers.Main) {
                 txtBalance.text = "${String.format("%,.2f", netWorth)} THB"
@@ -93,17 +103,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     val currentBalance = walletBalances[w.id] ?: 0.0
                     val walletView = TextView(requireContext())
 
-                    // 🔥 แยกการแสดงผลและการคำนวณวงเงินคงเหลือ
                     if (w.type == 0) {
                         walletView.text = "💰 ${w.name}: ${String.format("%,.2f", currentBalance)} ฿"
                         walletView.setTextColor(Color.parseColor("#455A64"))
                     } else {
-                        // คำนวณยอดหนี้และวงเงินคงเหลือ
                         val debt = if (currentBalance < 0) currentBalance * -1 else 0.0
-                        val remainingCredit = w.creditLimit - debt
-
+                        val remainingCredit = w.creditLimit + currentBalance
                         walletView.text = "💳 ${w.name}: รูดไป ${String.format("%,.2f", debt)} ฿\n    (วงเงินคงเหลือ: ${String.format("%,.2f", remainingCredit)} ฿)"
-                        walletView.setTextColor(Color.parseColor("#E57373")) // สีแดงให้รู้ว่าเป็นหนี้
+                        walletView.setTextColor(Color.parseColor("#E57373"))
                     }
 
                     walletView.textSize = 16f

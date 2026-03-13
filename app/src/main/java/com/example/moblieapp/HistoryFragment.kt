@@ -27,7 +27,9 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
     private lateinit var spinnerMonth: Spinner
     private lateinit var edtSearch: EditText
     private lateinit var layoutEmptyState: LinearLayout
+
     private var allTransactions = listOf<Transaction>()
+    private var allWallets = listOf<Wallet>() // 🔥 เก็บลิสต์กระเป๋าเงิน
     private var currentSearchQuery = ""
 
     private val months = arrayOf(
@@ -78,7 +80,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             bundle.putString("category", transaction.category)
             bundle.putString("note", transaction.note)
             bundle.putString("date", transaction.date)
-            bundle.putInt("walletId", transaction.walletId) // 🔥 เพิ่มบรรทัดนี้ เพื่อส่งค่ากระเป๋าเงินไปหน้าแก้ไข
+            bundle.putInt("walletId", transaction.walletId)
 
             val addFragment = AddTransactionFragment()
             addFragment.arguments = bundle
@@ -101,6 +103,8 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         lifecycleScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(requireContext())
             allTransactions = db.transactionDao().getAllTransactions()
+            allWallets = db.walletDao().getAllWallets() // 🔥 ดึงข้อมูลกระเป๋าเงินจากฐานข้อมูล
+
             withContext(Dispatchers.Main) {
                 filterData(spinnerMonth.selectedItemPosition)
             }
@@ -126,7 +130,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             }
         }
 
-        adapter.setData(finalFilteredList)
+        adapter.setData(finalFilteredList, allWallets) // 🔥 ส่ง allWallets เข้าไปด้วย
 
         if (finalFilteredList.isEmpty()) {
             recyclerView.visibility = View.GONE
