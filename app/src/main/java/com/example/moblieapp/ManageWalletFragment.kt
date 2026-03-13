@@ -2,7 +2,9 @@ package com.example.moblieapp
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.text.InputType
 import android.view.View
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
@@ -31,14 +33,14 @@ class ManageWalletFragment : Fragment(R.layout.fragment_manage_wallet) {
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         adapter = WalletAdapter(emptyList(), { wallet ->
-            showWalletDialog(wallet) // กดเพื่อแก้ไข
+            showWalletDialog(wallet)
         }, { wallet ->
-            deleteWallet(wallet) // กดเพื่อลบ
+            deleteWallet(wallet)
         })
         recyclerView.adapter = adapter
 
         btnAddWallet.setOnClickListener {
-            showWalletDialog(null) // กดเพื่อเพิ่มใหม่
+            showWalletDialog(null)
         }
 
         loadWallets()
@@ -54,7 +56,6 @@ class ManageWalletFragment : Fragment(R.layout.fragment_manage_wallet) {
         }
     }
 
-    // ฟังก์ชันเด้ง Pop-up ให้กรอกชื่อ/แก้ชื่อกระเป๋า
     private fun showWalletDialog(wallet: Wallet?) {
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle(if (wallet == null) "เพิ่มกระเป๋าใหม่" else "แก้ไขกระเป๋าเงิน")
@@ -63,32 +64,60 @@ class ManageWalletFragment : Fragment(R.layout.fragment_manage_wallet) {
         layout.orientation = LinearLayout.VERTICAL
         layout.setPadding(50, 40, 50, 10)
 
+        // 1. ช่องกรอกชื่อกระเป๋า
         val inputName = EditText(requireContext())
         inputName.hint = "ชื่อกระเป๋า (เช่น KBank, บัตรเครดิต BBL)"
         if (wallet != null) inputName.setText(wallet.name)
         layout.addView(inputName)
 
+        // 2. เลือกประเภทกระเป๋า
         val typeOptions = arrayOf("กระเป๋าเงินขั้นพื้นฐาน", "กระเป๋าเงินเครดิต")
         val spinner = Spinner(requireContext())
         val spinnerAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, typeOptions)
         spinner.adapter = spinnerAdapter
-
-        // ถ้าเป็นการแก้ไข ให้โชว์ประเภทเดิม
         if (wallet != null) spinner.setSelection(wallet.type)
         layout.addView(spinner)
+
+        // 🔥 3. ช่องกรอกวงเงิน (จะซ่อนไว้ก่อน ถ้าเป็นพื้นฐาน)
+        val inputCreditLimit = EditText(requireContext())
+        inputCreditLimit.hint = "ใส่วงเงินบัตรเครดิต (เช่น 50000)"
+        inputCreditLimit.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+        inputCreditLimit.visibility = if (wallet?.type == 1) View.VISIBLE else View.GONE
+        if (wallet != null && wallet.type == 1 && wallet.creditLimit > 0) {
+            inputCreditLimit.setText(wallet.creditLimit.toString())
+        }
+
+        // ตั้งค่าให้โชว์/ซ่อนช่องกรอกวงเงิน เมื่อกดเปลี่ยนประเภท
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (position == 1) {
+                    inputCreditLimit.visibility = View.VISIBLE
+                } else {
+                    inputCreditLimit.visibility = View.GONE
+                    inputCreditLimit.text.clear()
+                }
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+        layout.addView(inputCreditLimit)
 
         builder.setView(layout)
 
         builder.setPositiveButton("บันทึก") { _, _ ->
             val name = inputName.text.toString()
             val type = spinner.selectedItemPosition
+
+            // ดึงค่าวงเงิน (ถ้าเว้นว่างไว้ให้เป็น 0.0)
+            val limitText = inputCreditLimit.text.toString()
+            val limit = if (type == 1 && limitText.isNotEmpty()) limitText.toDouble() else 0.0
+
             if (name.isNotEmpty()) {
                 lifecycleScope.launch(Dispatchers.IO) {
                     val db = AppDatabase.getDatabase(requireContext())
                     if (wallet == null) {
-                        db.walletDao().insertWallet(Wallet(name = name, type = type, balance = 0.0))
+                        db.walletDao().insertWallet(Wallet(name = name, type = type, balance = 0.0, creditLimit = limit))
                     } else {
-                        db.walletDao().updateWallet(wallet.copy(name = name, type = type))
+                        db.walletDao().updateWallet(wallet.copy(name = name, type = type, creditLimit = limit))
                     }
                     withContext(Dispatchers.Main) {
                         Toast.makeText(requireContext(), "บันทึกสำเร็จ", Toast.LENGTH_SHORT).show()
@@ -104,7 +133,7 @@ class ManageWalletFragment : Fragment(R.layout.fragment_manage_wallet) {
     private fun deleteWallet(wallet: Wallet) {
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle("ยืนยันการลบ")
-        builder.setMessage("คุณต้องการลบกระเป๋า '${wallet.name}' ใช่หรือไม่? (หมายเหตุ: รายการที่ใช้กระเป๋านี้อาจแสดงผลผิดพลาด)")
+        builder.setMessage("คุณต้องการลบกระเป๋า '${wallet.name}' ใช่หรือไม่?")
         builder.setPositiveButton("ลบเลย") { _, _ ->
             lifecycleScope.launch(Dispatchers.IO) {
                 val db = AppDatabase.getDatabase(requireContext())

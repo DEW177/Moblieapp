@@ -60,13 +60,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             var totalExpense = 0.0
             val expenseMap = mutableMapOf<String, Float>()
 
-            // เตรียมตัวแปรเก็บยอดเงินแต่ละกระเป๋า
             val walletBalances = mutableMapOf<Int, Double>()
             for (w in wallets) {
-                walletBalances[w.id] = w.balance // ยอดเริ่มต้น
+                walletBalances[w.id] = w.balance
             }
 
-            // คำนวณรายรับรายจ่าย และยอดเงินในกระเป๋า
             for (t in transactions) {
                 if (t.type == 1) {
                     totalIncome += t.amount
@@ -80,7 +78,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 }
             }
 
-            // คำนวณทรัพย์สินสุทธิ (Net Worth)
             var netWorth = 0.0
             for (w in wallets) {
                 netWorth += walletBalances[w.id] ?: 0.0
@@ -91,18 +88,25 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 txtIncome.text = "รายรับ\n+ ${String.format("%,.2f", totalIncome)}"
                 txtExpense.text = "รายจ่าย\n- ${String.format("%,.2f", totalExpense)}"
 
-                // วาดรายการกระเป๋าเงินบนหน้าจอ
                 layoutWallets.removeAllViews()
                 for (w in wallets) {
                     val currentBalance = walletBalances[w.id] ?: 0.0
                     val walletView = TextView(requireContext())
 
-                    // เพิ่มสัญลักษณ์ให้ดูง่ายว่าอันไหนคือหนี้
-                    val prefix = if (w.type == 1) "💳" else "💰"
-                    walletView.text = "$prefix ${w.name}: ${String.format("%,.2f", currentBalance)} ฿"
+                    // 🔥 แยกการแสดงผลและการคำนวณวงเงินคงเหลือ
+                    if (w.type == 0) {
+                        walletView.text = "💰 ${w.name}: ${String.format("%,.2f", currentBalance)} ฿"
+                        walletView.setTextColor(Color.parseColor("#455A64"))
+                    } else {
+                        // คำนวณยอดหนี้และวงเงินคงเหลือ
+                        val debt = if (currentBalance < 0) currentBalance * -1 else 0.0
+                        val remainingCredit = w.creditLimit - debt
+
+                        walletView.text = "💳 ${w.name}: รูดไป ${String.format("%,.2f", debt)} ฿\n    (วงเงินคงเหลือ: ${String.format("%,.2f", remainingCredit)} ฿)"
+                        walletView.setTextColor(Color.parseColor("#E57373")) // สีแดงให้รู้ว่าเป็นหนี้
+                    }
 
                     walletView.textSize = 16f
-                    walletView.setTextColor(Color.parseColor("#455A64"))
                     walletView.setPadding(0, 0, 0, 16)
                     layoutWallets.addView(walletView)
                 }

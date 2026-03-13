@@ -28,7 +28,13 @@ class WalletAdapter(
     override fun onBindViewHolder(holder: WalletViewHolder, position: Int) {
         val wallet = wallets[position]
         holder.tvWalletName.text = wallet.name
-        holder.tvWalletType.text = if (wallet.type == 0) "ประเภท: กระเป๋าเงินขั้นพื้นฐาน" else "ประเภท: กระเป๋าเงินเครดิต"
+
+        // 🔥 แยกการแสดงผลประเภทและวงเงิน
+        if (wallet.type == 0) {
+            holder.tvWalletType.text = "ประเภท: กระเป๋าเงินขั้นพื้นฐาน"
+        } else {
+            holder.tvWalletType.text = "ประเภท: กระเป๋าเงินเครดิต (วงเงิน: ${String.format("%,.0f", wallet.creditLimit)} ฿)"
+        }
 
         holder.btnEditWallet.setOnClickListener { onEditClick(wallet) }
         holder.btnDeleteWallet.setOnClickListener { onDeleteClick(wallet) }
