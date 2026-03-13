@@ -16,12 +16,12 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginBottom="16dp"
             android:text="ภาพรวมบัญชี ☀️"
-            android:textColor="#333333"
             android:textSize="22sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginBottom="16dp"
+            android:layout_marginStart="8dp"/>
 
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
@@ -40,7 +40,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="ยอดคงเหลือ"
+                    android:text="ทรัพย์สินสุทธิ (กระเป๋ารวม)"
                     android:textSize="14sp"
                     android:textColor="#888888"/>
 
@@ -54,58 +54,12 @@
                     android:textColor="#333333"
                     android:layout_marginTop="4dp"/>
 
-                <LinearLayout
+                <View
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
+                    android:layout_height="1dp"
+                    android:background="#F0F0F0"
                     android:layout_marginTop="20dp"
-                    android:gravity="bottom">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="งบประมาณเดือนนี้"
-                        android:textSize="14sp"
-                        android:textColor="#888888"/>
-
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="0dp"
-                        android:layout_weight="1"/>
-
-                    <TextView
-                        android:id="@+id/tvBudgetStatus"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0 / 10,000"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="#888888"
-                        android:layout_marginEnd="8dp"/>
-
-                    <ImageView
-                        android:id="@+id/btnEditBudget"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_edit"
-                        app:tint="#BDBDBD"/>
-                </LinearLayout>
-
-                <ProgressBar
-                    android:id="@+id/progressBarBudget"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="8dp"
-                    android:layout_marginTop="8dp"
-                    android:max="100"
-                    android:progress="0"
-                    android:progressDrawable="@drawable/custom_progress_bar"
-                    android:progressTint="#AEDBCE" /> <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="#F0F0F0"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="16dp"/>
+                    android:layout_marginBottom="16dp"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -143,6 +97,42 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="กระเป๋าเงินของฉัน 💳"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#333333"/>
+
+            <TextView
+                android:id="@+id/btnManageWallet"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="จัดการ"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#26A69A"
+                android:padding="8dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutWallets"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="20dp"/>
+
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -173,5 +163,4 @@
         </androidx.cardview.widget.CardView>
 
     </LinearLayout>
-
 </ScrollView>

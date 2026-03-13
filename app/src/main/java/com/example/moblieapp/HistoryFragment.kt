@@ -25,10 +25,10 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: TransactionAdapter
     private lateinit var spinnerMonth: Spinner
-    private lateinit var edtSearch: EditText // 🔥 ตัวแปรช่องค้นหา
+    private lateinit var edtSearch: EditText
     private lateinit var layoutEmptyState: LinearLayout
     private var allTransactions = listOf<Transaction>()
-    private var currentSearchQuery = "" // 🔥 เก็บคำค้นหาปัจจุบัน
+    private var currentSearchQuery = ""
 
     private val months = arrayOf(
         "ดูทั้งหมด", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
@@ -40,7 +40,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
 
         recyclerView = view.findViewById(R.id.recyclerView)
         spinnerMonth = view.findViewById(R.id.spinnerMonth)
-        edtSearch = view.findViewById(R.id.edtSearch) // 🔥 เชื่อมตัวแปร
+        edtSearch = view.findViewById(R.id.edtSearch)
         layoutEmptyState = view.findViewById(R.id.layoutEmptyState)
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -57,7 +57,6 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        // 🔥 ดักจับการพิมพ์ในช่องค้นหา (พิมพ์ปุ๊บ กรองปั๊บ)
         edtSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -79,6 +78,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             bundle.putString("category", transaction.category)
             bundle.putString("note", transaction.note)
             bundle.putString("date", transaction.date)
+            bundle.putInt("walletId", transaction.walletId) // 🔥 เพิ่มบรรทัดนี้ เพื่อส่งค่ากระเป๋าเงินไปหน้าแก้ไข
 
             val addFragment = AddTransactionFragment()
             addFragment.arguments = bundle
@@ -107,9 +107,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         }
     }
 
-    // 🔥 ปรับการกรองให้รองรับทั้งเดือนและการค้นหา
     private fun filterData(monthIndex: Int) {
-        // 1. กรองตามเดือนก่อน
         val filteredByMonth = if (monthIndex == 0) {
             allTransactions
         } else {
@@ -119,7 +117,6 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             }
         }
 
-        // 2. กรองตามคำค้นหาต่อ
         val finalFilteredList = if (currentSearchQuery.isEmpty()) {
             filteredByMonth
         } else {
@@ -131,7 +128,6 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
 
         adapter.setData(finalFilteredList)
 
-        // 3. จัดการ Empty State
         if (finalFilteredList.isEmpty()) {
             recyclerView.visibility = View.GONE
             layoutEmptyState.visibility = View.VISIBLE

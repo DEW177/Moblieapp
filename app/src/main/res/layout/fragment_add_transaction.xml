@@ -12,7 +12,6 @@
         android:orientation="vertical"
         android:padding="28dp">
 
-        <!-- ===== Segmented รายรับ / รายจ่าย ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="60dp"
@@ -44,7 +43,6 @@
                 android:backgroundTint="#4DB6AC"/>
         </LinearLayout>
 
-        <!-- ===== จำนวนเงิน ===== -->
         <EditText
             android:id="@+id/edtAmount"
             android:layout_width="match_parent"
@@ -59,7 +57,6 @@
             android:layout_marginBottom="24dp"
             android:fontFamily="@font/sarabunbold"/>
 
-        <!-- ===== วันที่ ===== -->
         <TextView
             android:id="@+id/tvDate"
             android:layout_width="match_parent"
@@ -74,8 +71,22 @@
             android:textColor="#37474F"
             android:drawableEnd="@android:drawable/ic_menu_today"
             android:layout_marginBottom="26dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="กระเป๋าเงินที่ใช้"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:textColor="#263238"
+            android:layout_marginBottom="8dp"/>
 
-        <!-- ===== หมวดหมู่ ===== -->
+        <Spinner
+            android:id="@+id/spinnerWallet"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="#F0F3F5"
+            android:layout_marginBottom="26dp"/>
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -125,13 +136,31 @@
             android:orientation="vertical"
             android:layout_marginBottom="26dp">
 
-            <RadioButton android:id="@+id/rbFood" android:text="อาหารและเครื่องดื่ม"/>
-            <RadioButton android:id="@+id/rbTransport" android:text="การเดินทาง"/>
-            <RadioButton android:id="@+id/rbShopping" android:text="ช้อปปิ้ง"/>
-            <RadioButton android:id="@+id/rbExpenseOther" android:text="อื่นๆ"/>
+            <RadioButton
+                android:id="@+id/rbFood"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="อาหารและเครื่องดื่ม"/>
+
+            <RadioButton
+                android:id="@+id/rbTransport"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="การเดินทาง"/>
+
+            <RadioButton
+                android:id="@+id/rbShopping"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ช้อปปิ้ง"/>
+
+            <RadioButton
+                android:id="@+id/rbExpenseOther"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="อื่นๆ"/>
         </RadioGroup>
 
-        <!-- ===== หมายเหตุ ===== -->
         <EditText
             android:id="@+id/edtNote"
             android:layout_width="match_parent"
@@ -141,19 +170,17 @@
             android:padding="18dp"
             android:textColor="#263238"
             android:background="#EAF7F3"
-            android:layout_marginBottom="40dp"/>
-
-        <!-- ===== ปุ่มบันทึก ===== -->
-        <Button
-            android:id="@+id/btnSave"
-            android:layout_width="match_parent"
-            android:layout_height="65dp"
-            android:text="บันทึก"
-            android:textAllCaps="false"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:backgroundTint="#26A69A"
-            android:textColor="#FFFFFF"/>
+            android:inputType="textMultiLine"
+            android:layout_marginBottom="40dp"/> <Button
+        android:id="@+id/btnSave"
+        android:layout_width="match_parent"
+        android:layout_height="65dp"
+        android:text="บันทึก"
+        android:textAllCaps="false"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:backgroundTint="#26A69A"
+        android:textColor="#FFFFFF"/>
 
     </LinearLayout>
 

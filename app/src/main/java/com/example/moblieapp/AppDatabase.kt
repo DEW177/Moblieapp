@@ -5,10 +5,14 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [Transaction::class], version = 2)
+// 🔥 1. เพิ่ม Wallet::class เข้าไป และปรับ version เป็น 3
+@Database(entities = [Transaction::class, Wallet::class], version = 3)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun transactionDao(): TransactionDao
+
+    // 🔥 2. เพิ่ม WalletDao เข้ามาเพื่อให้เรียกใช้งานกระเป๋าเงินได้
+    abstract fun walletDao(): WalletDao
 
     companion object {
         @Volatile
@@ -21,7 +25,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "expense_database"
                 )
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration() // ถ้าโครงสร้างเปลี่ยน จะล้างข้อมูลเก่าทิ้งอัตโนมัติ
                     .build()
 
                 INSTANCE = instance
