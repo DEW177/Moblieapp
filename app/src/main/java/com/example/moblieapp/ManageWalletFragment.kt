@@ -68,7 +68,7 @@ class ManageWalletFragment : Fragment(R.layout.fragment_manage_wallet) {
         if (wallet != null) inputName.setText(wallet.name)
         layout.addView(inputName)
 
-        val typeOptions = arrayOf("ทรัพย์สิน (เงินสด/ธนาคาร)", "หนี้สิน (บัตรเครดิต)")
+        val typeOptions = arrayOf("กระเป๋าเงินขั้นพื้นฐาน", "กระเป๋าเงินเครดิต")
         val spinner = Spinner(requireContext())
         val spinnerAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, typeOptions)
         spinner.adapter = spinnerAdapter

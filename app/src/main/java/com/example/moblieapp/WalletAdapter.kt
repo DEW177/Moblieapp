@@ -28,7 +28,7 @@ class WalletAdapter(
     override fun onBindViewHolder(holder: WalletViewHolder, position: Int) {
         val wallet = wallets[position]
         holder.tvWalletName.text = wallet.name
-        holder.tvWalletType.text = if (wallet.type == 0) "ประเภท: ทรัพย์สิน (บวก)" else "ประเภท: บัตรเครดิต (หนี้)"
+        holder.tvWalletType.text = if (wallet.type == 0) "ประเภท: กระเป๋าเงินขั้นพื้นฐาน" else "ประเภท: กระเป๋าเงินเครดิต"
 
         holder.btnEditWallet.setOnClickListener { onEditClick(wallet) }
         holder.btnDeleteWallet.setOnClickListener { onDeleteClick(wallet) }
