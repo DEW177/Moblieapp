@@ -44,7 +44,6 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
     private var isTransfer: Boolean = false
     private var selectedCategory: String = ""
 
-    // 🔥 อัปเดตลิสต์รายจ่ายแบบมี [HEADER] เพื่อจัดกลุ่ม
     private val defaultExpenseCategories = listOf(
         "[HEADER]อาหาร",
         "🍜 อาหาร & เครื่องดื่ม",
@@ -251,7 +250,6 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
                 btnExpense.setBackgroundColor(activeColor)
                 btnExpense.setTextColor(Color.WHITE)
                 if (selectedCategory.isEmpty() || defaultIncomeCategories.contains(selectedCategory) || getCustomCategories(false).contains(selectedCategory)) {
-                    // เลือกรายการแรกที่ไม่ใช่ Header
                     selectedCategory = defaultExpenseCategories.first { !it.startsWith("[HEADER]") }
                 }
             } else {
@@ -281,14 +279,22 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         prefs.edit().putStringSet(key, set).apply()
     }
 
-    // 🔥 ระบบแยกกลุ่มให้สวยงามตอนเปิด Dialog
+    // 🔥 ฟังก์ชันสำหรับลบหมวดหมู่ที่สร้างขึ้นเอง
+    private fun deleteCustomCategory(forExpense: Boolean, category: String) {
+        val prefs = requireContext().getSharedPreferences("Categories", Context.MODE_PRIVATE)
+        val key = if (forExpense) "custom_expense" else "custom_income"
+        val set = prefs.getStringSet(key, emptySet())?.toMutableSet() ?: mutableSetOf()
+        set.remove(category)
+        prefs.edit().putStringSet(key, set).apply()
+    }
+
     private fun showCategoryDialog() {
         val list = mutableListOf<String>()
         list.addAll(if (isExpense) defaultExpenseCategories else defaultIncomeCategories)
 
         val customCats = getCustomCategories(isExpense)
         if (customCats.isNotEmpty()) {
-            list.add("[HEADER]หมวดหมู่ของฉัน")
+            list.add("[HEADER]หมวดหมู่ของฉัน (กดค้างเพื่อลบ)") // เพิ่มคำแนะนำให้ผู้ใช้
             list.addAll(customCats)
         }
         list.add("➕ เพิ่มหมวดหมู่ใหม่...")
@@ -297,7 +303,6 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         builder.setTitle(if (isExpense) "เลือกหมวดหมู่รายจ่าย" else "เลือกหมวดหมู่รายรับ")
 
         val adapter = object : ArrayAdapter<String>(requireContext(), android.R.layout.simple_list_item_1, list) {
-            // ปิดการคลิกที่ Header
             override fun isEnabled(position: Int): Boolean {
                 return !list[position].startsWith("[HEADER]")
             }
@@ -307,7 +312,6 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
                 val text = list[position]
 
                 if (text.startsWith("[HEADER]")) {
-                    // จัดหน้าตาให้เหมือนหัวข้อกลุ่ม
                     view.text = text.replace("[HEADER]", "")
                     view.setTextColor(Color.parseColor("#26A69A"))
                     view.textSize = 14f
@@ -315,7 +319,6 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
                     view.setBackgroundColor(Color.parseColor("#EAF7F3"))
                     view.setPadding(30, 20, 30, 20)
                 } else if (text == "➕ เพิ่มหมวดหมู่ใหม่...") {
-                    // ปุ่มเพิ่มหมวดหมู่
                     view.text = text
                     view.setTextColor(Color.parseColor("#1976D2"))
                     view.textSize = 16f
@@ -323,7 +326,6 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
                     view.setBackgroundColor(Color.TRANSPARENT)
                     view.setPadding(40, 40, 30, 40)
                 } else {
-                    // หมวดหมู่ปกติ ให้ขยับเยื้องเข้าไป
                     view.text = text
                     view.setTextColor(Color.parseColor("#333333"))
                     view.textSize = 16f
@@ -335,7 +337,7 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
             }
         }
 
-        builder.setAdapter(adapter) { _, which ->
+        builder.setAdapter(adapter) { dialogInterface, which ->
             val selected = list[which]
             if (selected == "➕ เพิ่มหมวดหมู่ใหม่...") {
                 showAddCustomCategoryDialog()
@@ -344,7 +346,42 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
                 tvCategorySelector.text = selectedCategory
             }
         }
-        builder.show()
+
+        val dialog = builder.create()
+        dialog.show() // ต้องโชว์ก่อนถึงจะจับ Event การกดค้างได้
+
+        // 🔥 เพิ่มการจับ Event กดค้าง (Long Click) สำหรับการลบหมวดหมู่ที่สร้างเอง
+        dialog.listView.setOnItemLongClickListener { _, _, position, _ ->
+            val selected = list[position]
+            val customCategoriesList = getCustomCategories(isExpense)
+
+            if (customCategoriesList.contains(selected)) {
+                // ถ้าเป็นหมวดหมู่ที่สร้างเอง ให้เด้งถามยืนยันการลบ
+                AlertDialog.Builder(requireContext())
+                    .setTitle("ลบหมวดหมู่")
+                    .setMessage("คุณต้องการลบหมวดหมู่ '$selected' ใช่หรือไม่?")
+                    .setPositiveButton("ลบ") { _, _ ->
+                        deleteCustomCategory(isExpense, selected)
+                        dialog.dismiss() // ปิดหน้าต่างเดิม
+                        showCategoryDialog() // เปิดใหม่เพื่อรีเฟรชรายการ
+
+                        // ถ้าลบหมวดหมู่ที่กำลังเลือกใช้อยู่ ให้รีเซ็ตกลับไปเป็นค่าเริ่มต้น
+                        if (selectedCategory == selected) {
+                            selectedCategory = if (isExpense) defaultExpenseCategories.first { !it.startsWith("[HEADER]") } else defaultIncomeCategories[0]
+                            tvCategorySelector.text = selectedCategory
+                        }
+                    }
+                    .setNegativeButton("ยกเลิก", null)
+                    .show()
+                true
+            } else if (!selected.startsWith("[HEADER]") && selected != "➕ เพิ่มหมวดหมู่ใหม่...") {
+                // แจ้งเตือนว่าหมวดหมู่พื้นฐานลบไม่ได้
+                Toast.makeText(requireContext(), "หมวดหมู่พื้นฐานไม่สามารถลบได้", Toast.LENGTH_SHORT).show()
+                true
+            } else {
+                false
+            }
+        }
     }
 
     private fun showAddCustomCategoryDialog() {
