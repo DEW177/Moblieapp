@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Calendar
 
 class HistoryFragment : Fragment(R.layout.fragment_history) {
 
@@ -29,7 +30,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
     private lateinit var layoutEmptyState: LinearLayout
 
     private var allTransactions = listOf<Transaction>()
-    private var allWallets = listOf<Wallet>() // 🔥 เก็บลิสต์กระเป๋าเงิน
+    private var allWallets = listOf<Wallet>()
     private var currentSearchQuery = ""
 
     private val months = arrayOf(
@@ -51,6 +52,12 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
 
         val spinnerAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, months)
         spinnerMonth.adapter = spinnerAdapter
+
+        // --- ตั้งค่าให้เลือกเดือนปัจจุบันตอนเปิดหน้าครั้งแรก ---
+        val calendar = Calendar.getInstance()
+        val currentMonthIndex = calendar.get(Calendar.MONTH) + 1 // มกราคมคือ 0 ดังนั้นต้อง +1
+        spinnerMonth.setSelection(currentMonthIndex)
+        // ----------------------------------------------
 
         spinnerMonth.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
@@ -82,6 +89,11 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             bundle.putString("date", transaction.date)
             bundle.putInt("walletId", transaction.walletId)
 
+            // 🔥 เพิ่มโค้ดนี้: เพื่อส่งข้อมูลกระเป๋าปลายทางไปด้วย (ถ้าเป็นการโอนเงิน)
+            transaction.toWalletId?.let {
+                bundle.putInt("toWalletId", it)
+            }
+
             val addFragment = AddTransactionFragment()
             addFragment.arguments = bundle
 
@@ -103,7 +115,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         lifecycleScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(requireContext())
             allTransactions = db.transactionDao().getAllTransactions()
-            allWallets = db.walletDao().getAllWallets() // 🔥 ดึงข้อมูลกระเป๋าเงินจากฐานข้อมูล
+            allWallets = db.walletDao().getAllWallets()
 
             withContext(Dispatchers.Main) {
                 filterData(spinnerMonth.selectedItemPosition)
@@ -117,7 +129,8 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         } else {
             allTransactions.filter { transaction ->
                 val parts = transaction.date.split("/")
-                parts.size == 3 && parts[1] == monthIndex.toString()
+                // แปลงเป็น Int เพื่อความแม่นยำ (เช่น "03" หรือ "3" จะได้ค่า 3 เหมือนกัน)
+                parts.size == 3 && parts[1].toIntOrNull() == monthIndex
             }
         }
 
@@ -130,7 +143,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             }
         }
 
-        adapter.setData(finalFilteredList, allWallets) // 🔥 ส่ง allWallets เข้าไปด้วย
+        adapter.setData(finalFilteredList, allWallets)
 
         if (finalFilteredList.isEmpty()) {
             recyclerView.visibility = View.GONE

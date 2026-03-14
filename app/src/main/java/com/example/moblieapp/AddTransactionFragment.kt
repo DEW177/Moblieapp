@@ -86,7 +86,10 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
             currentTransactionId = bundle.getInt("id", 0)
 
             if (currentTransactionId != 0) {
-                isExpense = (bundle.getInt("type", 2) == 2)
+                val type = bundle.getInt("type", 2)
+                isExpense = (type == 2)
+                isTransfer = (type == 3) // 🔥 เพิ่มบรรทัดนี้: ให้ระบบรู้ว่ากำลังแก้การโอนเงิน
+
                 updateTypeSelection()
 
                 val amountVal = bundle.getDouble("amount", 0.0)
@@ -95,11 +98,16 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
                 edtNote.setText(bundle.getString("note", ""))
                 selectedWalletIdFromEdit = bundle.getInt("walletId", 0)
 
+                // 🔥 เพิ่มบรรทัดนี้: สร้างตัวแปรแฝงเพื่อรับกระเป๋าปลายทาง
+                val selectedToWalletIdFromEdit = bundle.getInt("toWalletId", 0)
+
                 val dateStr = bundle.getString("date", "")
                 if (dateStr.isNotEmpty()) {
                     selectedDate = dateStr
                     tvDate.text = "วันที่: $selectedDate"
                 }
+
+                // ... (โค้ดดึง Category ด้านล่างปล่อยไว้เหมือนเดิม)
 
                 btnSave.text = "อัปเดตรายการ"
 
@@ -143,9 +151,20 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
                 val adapterTo = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, allWalletNames)
                 spinnerToWallet.adapter = adapterTo
 
+                // 🔥 แก้บั๊ก Crash ตรงนี้: ต้องหา Index จาก filteredWallets แทนการหาจาก walletList ทั้งหมด
                 if (selectedWalletIdFromEdit != 0) {
-                    val selectedIndex = walletList.indexOfFirst { it.id == selectedWalletIdFromEdit }
+                    val filteredWallets = if (isExpense || isTransfer) walletList else walletList.filter { it.type == 0 }
+                    val selectedIndex = filteredWallets.indexOfFirst { it.id == selectedWalletIdFromEdit }
                     if (selectedIndex >= 0) spinnerWallet.setSelection(selectedIndex)
+                }
+
+                // 🔥 เลื่อน Spinner ปลายทางให้ตรง (สำหรับกรณีแก้ไขการโอนเงิน)
+                arguments?.let { bundle ->
+                    val toWalletId = bundle.getInt("toWalletId", 0)
+                    if (isTransfer && toWalletId != 0) {
+                        val toIndex = walletList.indexOfFirst { it.id == toWalletId }
+                        if (toIndex >= 0) spinnerToWallet.setSelection(toIndex)
+                    }
                 }
             }
         }
