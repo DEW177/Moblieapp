@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Calendar // 🔥 เพิ่ม Calendar เข้ามาเพื่อดึงเดือนปัจจุบัน
 
 class HistoryFragment : Fragment(R.layout.fragment_history) {
 
@@ -55,6 +56,10 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         val spinnerMonthAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, months)
         spinnerMonth.adapter = spinnerMonthAdapter
 
+        // 🔥 เซ็ตค่าเริ่มต้นของ Dropdown ให้เป็น "เดือนปัจจุบัน"
+        val currentMonth = Calendar.getInstance().get(Calendar.MONTH) + 1
+        spinnerMonth.setSelection(currentMonth)
+
         spinnerMonth.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 filterData()
@@ -86,7 +91,6 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             val bundle = Bundle()
             bundle.putInt("id", transaction.id)
 
-            // 🔥 แปลงกลับเป็น type 3 ให้หน้า Add เข้าใจว่ามันคือรายการโอนเงินปกติ
             val realType = if (transaction.type == 4 || transaction.type == 5) 3 else transaction.type
             bundle.putInt("type", realType)
 
@@ -95,7 +99,6 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             bundle.putString("note", transaction.note)
             bundle.putString("date", transaction.date)
 
-            // 🔥 สลับกระเป๋ากลับให้ถูกต้องหากกดเข้าจากฝั่ง "รับโอน"
             if (transaction.type == 5) {
                 bundle.putInt("walletId", transaction.toWalletId ?: 1)
                 bundle.putInt("toWalletId", transaction.walletId)
@@ -140,6 +143,13 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             withContext(Dispatchers.Main) {
                 val walletSpinnerAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, walletNames)
                 spinnerWalletFilter.adapter = walletSpinnerAdapter
+
+                // ให้ระบบจำตำแหน่งเดิมของกระเป๋าถ้ามีการเลือกค้างไว้
+                val currentWalletSelection = spinnerWalletFilter.selectedItemPosition
+                if (currentWalletSelection >= 0 && currentWalletSelection < walletNames.size) {
+                    spinnerWalletFilter.setSelection(currentWalletSelection)
+                }
+
                 filterData()
             }
         }
@@ -149,12 +159,13 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         val monthIndex = spinnerMonth.selectedItemPosition
         val walletIndex = spinnerWalletFilter.selectedItemPosition
 
+        // 🔥 กรองข้อมูลตามเดือนที่เลือก (ใช้ trim() ดักจับกรณีมีช่องว่างติดมาด้วย)
         val filteredByMonth = if (monthIndex <= 0) {
             allTransactions
         } else {
             allTransactions.filter { transaction ->
                 val parts = transaction.date.split("/")
-                parts.size == 3 && parts[1] == monthIndex.toString()
+                parts.size == 3 && parts[1].trim() == monthIndex.toString()
             }
         }
 
@@ -178,7 +189,6 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             }
         }
 
-        // 🔥 แยกร่าง Transaction โอนเงินเป็น 2 บรรทัด (โอนออก และ รับโอน)
         val displayList = mutableListOf<Transaction>()
         for (t in filteredForWallet) {
             if (t.type == 3 && t.toWalletId != null) {
@@ -187,15 +197,15 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
 
                 if (selectedWallet == null || selectedWallet.id == t.walletId) {
                     displayList.add(t.copy(
-                        type = 4, // 4 = โอนออก
+                        type = 4,
                         category = "โอนไป ${destWallet?.name ?: "?"}"
                     ))
                 }
 
                 if (selectedWallet == null || selectedWallet.id == t.toWalletId) {
                     displayList.add(t.copy(
-                        type = 5, // 5 = รับโอน
-                        walletId = t.toWalletId, // สลับกระเป๋าเพื่อแสดงให้ตรง
+                        type = 5,
+                        walletId = t.toWalletId,
                         toWalletId = t.walletId,
                         category = "รับโอนจาก ${srcWallet?.name ?: "?"}"
                     ))
@@ -229,7 +239,6 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
     }
 
     private fun deleteFromDb(transaction: Transaction) {
-        // 🔥 หาข้อมูลตัวจริงจาก allTransactions เพราะ id มันเหมือนกัน
         val realTransaction = allTransactions.find { it.id == transaction.id }
         if (realTransaction != null) {
             lifecycleScope.launch(Dispatchers.IO) {
