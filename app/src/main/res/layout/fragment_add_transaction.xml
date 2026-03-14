@@ -12,7 +12,6 @@
         android:orientation="vertical"
         android:padding="28dp">
 
-        <!-- 🔥 เพิ่มปุ่ม Transfer -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="60dp"
@@ -100,7 +99,6 @@
             android:background="#F0F3F5"
             android:layout_marginBottom="26dp"/>
 
-        <!-- 🔥 Spinner ปลายทาง ซ่อนไว้ก่อน แสดงเฉพาะตอนเลือก Transfer -->
         <TextView
             android:id="@+id/tvToWalletLabel"
             android:layout_width="wrap_content"
@@ -121,78 +119,28 @@
             android:visibility="gone"/>
 
         <TextView
+            android:id="@+id/tvCategoryLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="หมวดหมู่"
             android:textSize="17sp"
             android:textStyle="bold"
             android:textColor="#263238"
-            android:layout_marginBottom="14dp"/>
+            android:layout_marginBottom="8dp"/>
 
-        <RadioGroup
-            android:id="@+id/radioGroupIncome"
+        <TextView
+            android:id="@+id/tvCategorySelector"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone"
-            android:layout_marginBottom="12dp">
-
-            <RadioButton
-                android:id="@+id/rbSalary"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="เงินเดือน / เงินประจำ"/>
-
-            <RadioButton
-                android:id="@+id/rbPartTime"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="พาร์ทไทม์ / ฟรีแลนซ์"/>
-
-            <RadioButton
-                android:id="@+id/rbBonus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="โบนัส / รางวัล"/>
-
-            <RadioButton
-                android:id="@+id/rbIncomeOther"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="อื่นๆ"/>
-        </RadioGroup>
-
-        <RadioGroup
-            android:id="@+id/radioGroupExpense"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginBottom="26dp">
-
-            <RadioButton
-                android:id="@+id/rbFood"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="อาหารและเครื่องดื่ม"/>
-
-            <RadioButton
-                android:id="@+id/rbTransport"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="การเดินทาง"/>
-
-            <RadioButton
-                android:id="@+id/rbShopping"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ช้อปปิ้ง"/>
-
-            <RadioButton
-                android:id="@+id/rbExpenseOther"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="อื่นๆ"/>
-        </RadioGroup>
+            android:layout_height="58dp"
+            android:text="เลือกหมวดหมู่..."
+            android:textSize="16sp"
+            android:gravity="center_vertical"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:background="#F0F3F5"
+            android:textColor="#37474F"
+            android:drawableEnd="@android:drawable/ic_menu_more"
+            android:layout_marginBottom="26dp"/>
 
         <EditText
             android:id="@+id/edtNote"
@@ -218,5 +166,4 @@
             android:textColor="#FFFFFF"/>
 
     </LinearLayout>
-
 </ScrollView>

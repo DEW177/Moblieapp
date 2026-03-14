@@ -32,20 +32,30 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionVi
 
         holder.tvNote.text = item.note
 
-        // 🔥 เพิ่มการเช็ค type 4 (โอนออก) และ 5 (รับเข้า) ที่เราจะแยกร่างมา
-        val categoryIcon = when {
-            item.type == 4 -> "📤"
-            item.type == 5 -> "📥"
-            item.category == "อาหารและเครื่องดื่ม" -> "🍜"
-            item.category == "การเดินทาง" -> "🚗"
-            item.category == "ช้อปปิ้ง" -> "🛍️"
-            item.category == "เงินเดือน / เงินประจำ" -> "💰"
-            item.category == "พาร์ทไทม์ / ฟรีแลนซ์" -> "💻"
-            item.category == "โบนัส / รางวัล" -> "🎁"
-            else -> "📝"
+        // 🔥 ดักจับการแสดงผลหมวดหมู่ เพื่อไม่ให้ Emoji เบิ้ลถ้ามีอยู่แล้ว
+        var displayCategory = item.category
+        if (item.type == 4) {
+            displayCategory = "📤 $displayCategory"
+        } else if (item.type == 5) {
+            displayCategory = "📥 $displayCategory"
+        } else {
+            // เช็คว่ามี Emoji อยู่ในข้อความแล้วหรือยัง (รองรับทั้งหมวดหมู่เก่าและใหม่)
+            val hasEmoji = displayCategory.any { Character.isSurrogate(it) || Character.getType(it) == Character.OTHER_SYMBOL.toInt() }
+            if (!hasEmoji) {
+                val icon = when (item.category) {
+                    "อาหารและเครื่องดื่ม" -> "🍜"
+                    "การเดินทาง" -> "🚗"
+                    "ช้อปปิ้ง" -> "🛍️"
+                    "เงินเดือน / เงินประจำ" -> "💰"
+                    "พาร์ทไทม์ / ฟรีแลนซ์" -> "💻"
+                    "โบนัส / รางวัล" -> "🎁"
+                    else -> "📝"
+                }
+                displayCategory = "$icon $displayCategory"
+            }
         }
 
-        holder.tvCategory.text = "$categoryIcon ${item.category}"
+        holder.tvCategory.text = displayCategory
         holder.tvDate.text = item.date
 
         val wallet = walletMap[item.walletId]
@@ -61,23 +71,16 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionVi
             holder.tvWallet.text = "❓ ไม่พบกระเป๋า"
         }
 
-        // 🔥 ถ้าเป็นรายจ่าย (2) หรือ โอนออก (4) ให้เป็นสีแดงติดลบ
         if (item.type == 2 || item.type == 4) {
             holder.tvAmount.text = "- ${item.amount}"
             holder.tvAmount.setTextColor(Color.RED)
         } else {
-            // นอกนั้นเป็นรายรับ (1) หรือ รับโอน (5) ให้เป็นสีเขียวบวก
             holder.tvAmount.text = "+ ${item.amount}"
             holder.tvAmount.setTextColor(Color.parseColor("#4CAF50"))
         }
 
-        holder.btnDeleteIcon.setOnClickListener {
-            onDeleteClick?.invoke(item)
-        }
-
-        holder.itemView.setOnClickListener {
-            onItemClick?.invoke(item)
-        }
+        holder.btnDeleteIcon.setOnClickListener { onDeleteClick?.invoke(item) }
+        holder.itemView.setOnClickListener { onItemClick?.invoke(item) }
     }
 
     override fun getItemCount(): Int = transactionList.size
