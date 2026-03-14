@@ -88,17 +88,26 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
             if (currentTransactionId != 0) {
                 val type = bundle.getInt("type", 2)
                 isExpense = (type == 2)
-                isTransfer = (type == 3) // 🔥 เพิ่มบรรทัดนี้: ให้ระบบรู้ว่ากำลังแก้การโอนเงิน
+                isTransfer = (type == 3)
 
                 updateTypeSelection()
 
                 val amountVal = bundle.getDouble("amount", 0.0)
                 edtAmount.setText(if (amountVal % 1.0 == 0.0) amountVal.toInt().toString() else amountVal.toString())
 
+                // ล็อกช่องจำนวนเงินหากเป็นการโอนเงิน
+                if (isTransfer) {
+                    edtAmount.isEnabled = false
+                    edtAmount.alpha = 0.6f // ทำให้สีจางลงให้รู้ว่าพิมพ์ไม่ได้
+
+                    // ล็อกปุ่มเปลี่ยนประเภทด้วย เพื่อไม่ให้รวนตอนแก้หมายเหตุ
+                    btnIncome.isEnabled = false
+                    btnExpense.isEnabled = false
+                    btnTransfer.isEnabled = false
+                }
+
                 edtNote.setText(bundle.getString("note", ""))
                 selectedWalletIdFromEdit = bundle.getInt("walletId", 0)
-
-                // 🔥 เพิ่มบรรทัดนี้: สร้างตัวแปรแฝงเพื่อรับกระเป๋าปลายทาง
                 val selectedToWalletIdFromEdit = bundle.getInt("toWalletId", 0)
 
                 val dateStr = bundle.getString("date", "")
@@ -106,8 +115,6 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
                     selectedDate = dateStr
                     tvDate.text = "วันที่: $selectedDate"
                 }
-
-                // ... (โค้ดดึง Category ด้านล่างปล่อยไว้เหมือนเดิม)
 
                 btnSave.text = "อัปเดตรายการ"
 
@@ -254,7 +261,6 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         }
         val amount = amountText.toDouble()
 
-        // 🔥 ใช้ filtered list ให้ตรงกับ spinner ที่แสดงอยู่
         val filteredWallets = if (isExpense || isTransfer) walletList else walletList.filter { it.type == 0 }
         val selectedWalletIndex = spinnerWallet.selectedItemPosition
         val targetWalletId = if (selectedWalletIndex >= 0 && filteredWallets.isNotEmpty())
@@ -283,16 +289,23 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
 
             val db = AppDatabase.getDatabase(requireContext())
             lifecycleScope.launch(Dispatchers.IO) {
-                db.transactionDao().insertTransaction(transaction)
+                // 🔥 แก้บั๊กตรงนี้: ให้เช็คก่อนว่าเป็นการเพิ่มใหม่ หรือแก้ไข
+                if (currentTransactionId == 0) {
+                    db.transactionDao().insertTransaction(transaction)
+                } else {
+                    db.transactionDao().updateTransaction(transaction)
+                }
+
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), "โอนเงินเรียบร้อย", Toast.LENGTH_SHORT).show()
+                    val message = if (currentTransactionId == 0) "โอนเงินเรียบร้อย" else "อัปเดตข้อมูลเรียบร้อย"
+                    Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
                     parentFragmentManager.popBackStack()
                 }
             }
             return
         }
 
-        // Income / Expense
+        // สำหรับ Income / Expense
         val activeRadioGroup = if (isExpense) radioGroupExpense else radioGroupIncome
         val selectedId = activeRadioGroup.checkedRadioButtonId
         var category = "อื่นๆ"
