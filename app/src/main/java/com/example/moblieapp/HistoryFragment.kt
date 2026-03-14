@@ -19,18 +19,19 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.Calendar
 
 class HistoryFragment : Fragment(R.layout.fragment_history) {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: TransactionAdapter
     private lateinit var spinnerMonth: Spinner
+    private lateinit var spinnerWalletFilter: Spinner // 🔥 เพิ่ม Spinner สำหรับกรองกระเป๋า
     private lateinit var edtSearch: EditText
     private lateinit var layoutEmptyState: LinearLayout
 
     private var allTransactions = listOf<Transaction>()
     private var allWallets = listOf<Wallet>()
+    private var filterWalletList = mutableListOf<Wallet?>() // เก็บรายชื่อกระเป๋าเพื่อใช้อ้างอิงตอนกรอง
     private var currentSearchQuery = ""
 
     private val months = arrayOf(
@@ -43,6 +44,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
 
         recyclerView = view.findViewById(R.id.recyclerView)
         spinnerMonth = view.findViewById(R.id.spinnerMonth)
+        spinnerWalletFilter = view.findViewById(R.id.spinnerWalletFilter) // 🔥 ผูกตัวแปร
         edtSearch = view.findViewById(R.id.edtSearch)
         layoutEmptyState = view.findViewById(R.id.layoutEmptyState)
 
@@ -50,18 +52,20 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         adapter = TransactionAdapter()
         recyclerView.adapter = adapter
 
-        val spinnerAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, months)
-        spinnerMonth.adapter = spinnerAdapter
-
-        // --- ตั้งค่าให้เลือกเดือนปัจจุบันตอนเปิดหน้าครั้งแรก ---
-        val calendar = Calendar.getInstance()
-        val currentMonthIndex = calendar.get(Calendar.MONTH) + 1 // มกราคมคือ 0 ดังนั้นต้อง +1
-        spinnerMonth.setSelection(currentMonthIndex)
-        // ----------------------------------------------
+        val spinnerMonthAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, months)
+        spinnerMonth.adapter = spinnerMonthAdapter
 
         spinnerMonth.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                filterData(position)
+                filterData() // 🔥 แก้ให้เรียกฟังก์ชันแบบไม่ต้องส่ง parameter
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        // 🔥 ดักจับ Event ตอนเปลี่ยนกระเป๋าเงินเพื่อกรองข้อมูล
+        spinnerWalletFilter.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                filterData()
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
@@ -70,7 +74,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 currentSearchQuery = s.toString().trim()
-                filterData(spinnerMonth.selectedItemPosition)
+                filterData()
             }
             override fun afterTextChanged(s: Editable?) {}
         })
@@ -89,7 +93,6 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             bundle.putString("date", transaction.date)
             bundle.putInt("walletId", transaction.walletId)
 
-            // 🔥 เพิ่มโค้ดนี้: เพื่อส่งข้อมูลกระเป๋าปลายทางไปด้วย (ถ้าเป็นการโอนเงิน)
             transaction.toWalletId?.let {
                 bundle.putInt("toWalletId", it)
             }
@@ -117,29 +120,61 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             allTransactions = db.transactionDao().getAllTransactions()
             allWallets = db.walletDao().getAllWallets()
 
+            // 🔥 เตรียมข้อมูลสำหรับ Dropdown กรองกระเป๋าเงิน
+            val walletNames = mutableListOf("ดูทุกกระเป๋า")
+            filterWalletList.clear()
+            filterWalletList.add(null) // Index 0 คือดูทั้งหมด (ไม่ระบุ)
+
+            for (w in allWallets) {
+                val prefix = if (w.type == 0) "💰" else "💳"
+                walletNames.add("$prefix ${w.name}")
+                filterWalletList.add(w)
+            }
+
             withContext(Dispatchers.Main) {
-                filterData(spinnerMonth.selectedItemPosition)
+                val walletSpinnerAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, walletNames)
+                spinnerWalletFilter.adapter = walletSpinnerAdapter
+
+                filterData()
             }
         }
     }
 
-    private fun filterData(monthIndex: Int) {
-        val filteredByMonth = if (monthIndex == 0) {
+    private fun filterData() {
+        // เช็คตำแหน่งล่าสุดของ Dropdown ทั้ง 2 อัน
+        val monthIndex = spinnerMonth.selectedItemPosition
+        val walletIndex = spinnerWalletFilter.selectedItemPosition
+
+        // 1. กรองเดือน
+        val filteredByMonth = if (monthIndex <= 0) {
             allTransactions
         } else {
             allTransactions.filter { transaction ->
                 val parts = transaction.date.split("/")
-                // แปลงเป็น Int เพื่อความแม่นยำ (เช่น "03" หรือ "3" จะได้ค่า 3 เหมือนกัน)
-                parts.size == 3 && parts[1].toIntOrNull() == monthIndex
+                parts.size == 3 && parts[1] == monthIndex.toString()
             }
         }
 
-        val finalFilteredList = if (currentSearchQuery.isEmpty()) {
+        // 2. กรองคำค้นหา
+        val filteredBySearch = if (currentSearchQuery.isEmpty()) {
             filteredByMonth
         } else {
             filteredByMonth.filter { transaction ->
                 transaction.note.contains(currentSearchQuery, ignoreCase = true) ||
                         transaction.category.contains(currentSearchQuery, ignoreCase = true)
+            }
+        }
+
+        // 3. 🔥 กรองกระเป๋าเงิน
+        val selectedWallet = if (walletIndex > 0 && walletIndex < filterWalletList.size) filterWalletList[walletIndex] else null
+
+        val finalFilteredList = if (selectedWallet == null) {
+            filteredBySearch
+        } else {
+            filteredBySearch.filter { transaction ->
+                // รายการจะแสดงก็ต่อเมื่อเกี่ยวข้องกับกระเป๋าที่เลือก (เป็นต้นทาง หรือ ปลายทางตอนโอนเงิน)
+                transaction.walletId == selectedWallet.id ||
+                        (transaction.type == 3 && transaction.toWalletId == selectedWallet.id)
             }
         }
 
@@ -172,7 +207,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             db.transactionDao().deleteTransaction(transaction)
             withContext(Dispatchers.Main) {
                 Toast.makeText(requireContext(), "ลบแล้ว", Toast.LENGTH_SHORT).show()
-                loadData()
+                loadData() // โหลดใหม่และกรองอัตโนมัติ
             }
         }
     }
