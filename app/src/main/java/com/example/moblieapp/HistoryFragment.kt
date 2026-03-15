@@ -19,7 +19,7 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.Calendar // 🔥 เพิ่ม Calendar เข้ามาเพื่อดึงเดือนปัจจุบัน
+import java.util.Calendar
 
 class HistoryFragment : Fragment(R.layout.fragment_history) {
 
@@ -42,7 +42,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
+        requireActivity().findViewById<View>(R.id.bottomMenu)?.visibility = View.VISIBLE
         recyclerView = view.findViewById(R.id.recyclerView)
         spinnerMonth = view.findViewById(R.id.spinnerMonth)
         spinnerWalletFilter = view.findViewById(R.id.spinnerWalletFilter)
@@ -56,7 +56,6 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         val spinnerMonthAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, months)
         spinnerMonth.adapter = spinnerMonthAdapter
 
-        // 🔥 เซ็ตค่าเริ่มต้นของ Dropdown ให้เป็น "เดือนปัจจุบัน"
         val currentMonth = Calendar.getInstance().get(Calendar.MONTH) + 1
         spinnerMonth.setSelection(currentMonth)
 
@@ -144,7 +143,6 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
                 val walletSpinnerAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, walletNames)
                 spinnerWalletFilter.adapter = walletSpinnerAdapter
 
-                // ให้ระบบจำตำแหน่งเดิมของกระเป๋าถ้ามีการเลือกค้างไว้
                 val currentWalletSelection = spinnerWalletFilter.selectedItemPosition
                 if (currentWalletSelection >= 0 && currentWalletSelection < walletNames.size) {
                     spinnerWalletFilter.setSelection(currentWalletSelection)
@@ -159,7 +157,6 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         val monthIndex = spinnerMonth.selectedItemPosition
         val walletIndex = spinnerWalletFilter.selectedItemPosition
 
-        // 🔥 กรองข้อมูลตามเดือนที่เลือก (ใช้ trim() ดักจับกรณีมีช่องว่างติดมาด้วย)
         val filteredByMonth = if (monthIndex <= 0) {
             allTransactions
         } else {
@@ -215,9 +212,43 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             }
         }
 
-        adapter.setData(displayList, allWallets)
+        // 🔥 สร้างกลุ่มแบ่งตามวันที่
+        val groupedByDate = displayList.groupBy { it.date }
 
-        if (displayList.isEmpty()) {
+        // เรียงวันที่จากใหม่ไปเก่า
+        val sortedDates = groupedByDate.keys.sortedByDescending { dateStr ->
+            val parts = dateStr.split("/")
+            if(parts.size == 3) {
+                val d = parts[0].trim().padStart(2, '0')
+                val m = parts[1].trim().padStart(2, '0')
+                val y = parts[2].trim()
+                "$y$m$d"
+            } else dateStr
+        }
+
+        val finalHistoryItems = mutableListOf<HistoryItem>()
+        for (date in sortedDates) {
+            val dailyTransactions = groupedByDate[date]!!.sortedByDescending { it.id } // เรียงรายการใหม่สุดขึ้นก่อน
+            var dailyTotal = 0.0
+
+            // คำนวณยอดรวมของวันนั้นๆ (รับ - จ่าย)
+            for (t in dailyTransactions) {
+                if (t.type == 1 || t.type == 5) dailyTotal += t.amount
+                else if (t.type == 2 || t.type == 4) dailyTotal -= t.amount
+            }
+
+            // ใส่ Header ของวันที่
+            finalHistoryItems.add(HistoryItem.DateHeader(date, dailyTotal))
+
+            // ใส่รายการย่อยที่อยู่ในวันนั้นๆ
+            for (t in dailyTransactions) {
+                finalHistoryItems.add(HistoryItem.TransactionItem(t))
+            }
+        }
+
+        adapter.setData(finalHistoryItems, allWallets)
+
+        if (finalHistoryItems.isEmpty()) {
             recyclerView.visibility = View.GONE
             layoutEmptyState.visibility = View.VISIBLE
         } else {

@@ -79,6 +79,7 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        requireActivity().findViewById<View>(R.id.bottomMenu)?.visibility = View.VISIBLE
         init(view)
         setupListeners()
     }

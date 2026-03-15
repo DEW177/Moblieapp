@@ -45,7 +45,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
+        requireActivity().findViewById<View>(R.id.bottomMenu)?.visibility = View.VISIBLE
         txtBalance = view.findViewById(R.id.txtBalance)
         txtIncome = view.findViewById(R.id.txtIncome)
         txtExpense = view.findViewById(R.id.txtExpense)

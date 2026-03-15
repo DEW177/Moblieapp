@@ -8,82 +8,129 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
+// 🔥 คลาสสำหรับแยกว่าข้อมูลก้อนนี้คือ "หัวข้อวันที่" หรือ "รายการปกติ"
+sealed class HistoryItem {
+    data class DateHeader(val date: String, val dailyTotal: Double) : HistoryItem()
+    data class TransactionItem(val transaction: Transaction) : HistoryItem()
+}
 
-    private var transactionList = listOf<Transaction>()
+class TransactionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+    private var itemList = listOf<HistoryItem>()
     private var walletMap = mapOf<Int, Wallet>()
 
     var onDeleteClick: ((Transaction) -> Unit)? = null
     var onItemClick: ((Transaction) -> Unit)? = null
 
-    fun setData(list: List<Transaction>, wallets: List<Wallet>) {
-        transactionList = list
+    // กำหนดรหัสประเภท Layout
+    companion object {
+        private const val TYPE_HEADER = 0
+        private const val TYPE_ITEM = 1
+    }
+
+    fun setData(list: List<HistoryItem>, wallets: List<Wallet>) {
+        itemList = list
         walletMap = wallets.associateBy { it.id }
         notifyDataSetChanged()
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TransactionViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_transaction, parent, false)
-        return TransactionViewHolder(view)
+    override fun getItemViewType(position: Int): Int {
+        return when (itemList[position]) {
+            is HistoryItem.DateHeader -> TYPE_HEADER
+            is HistoryItem.TransactionItem -> TYPE_ITEM
+        }
     }
 
-    override fun onBindViewHolder(holder: TransactionViewHolder, position: Int) {
-        val item = transactionList[position]
-
-        holder.tvNote.text = item.note
-
-        // 🔥 ดักจับการแสดงผลหมวดหมู่ เพื่อไม่ให้ Emoji เบิ้ลถ้ามีอยู่แล้ว
-        var displayCategory = item.category
-        if (item.type == 4) {
-            displayCategory = "📤 $displayCategory"
-        } else if (item.type == 5) {
-            displayCategory = "📥 $displayCategory"
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return if (viewType == TYPE_HEADER) {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_date_header, parent, false)
+            HeaderViewHolder(view)
         } else {
-            // เช็คว่ามี Emoji อยู่ในข้อความแล้วหรือยัง (รองรับทั้งหมวดหมู่เก่าและใหม่)
-            val hasEmoji = displayCategory.any { Character.isSurrogate(it) || Character.getType(it) == Character.OTHER_SYMBOL.toInt() }
-            if (!hasEmoji) {
-                val icon = when (item.category) {
-                    "อาหารและเครื่องดื่ม" -> "🍜"
-                    "การเดินทาง" -> "🚗"
-                    "ช้อปปิ้ง" -> "🛍️"
-                    "เงินเดือน / เงินประจำ" -> "💰"
-                    "พาร์ทไทม์ / ฟรีแลนซ์" -> "💻"
-                    "โบนัส / รางวัล" -> "🎁"
-                    else -> "📝"
-                }
-                displayCategory = "$icon $displayCategory"
-            }
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_transaction, parent, false)
+            TransactionViewHolder(view)
         }
+    }
 
-        holder.tvCategory.text = displayCategory
-        holder.tvDate.text = item.date
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        val item = itemList[position]
 
-        val wallet = walletMap[item.walletId]
-        if (wallet != null) {
-            if (wallet.type == 0) {
-                holder.tvWallet.text = "💰 ${wallet.name} (พื้นฐาน)"
-                holder.tvWallet.setTextColor(Color.parseColor("#455A64"))
+        if (holder is HeaderViewHolder && item is HistoryItem.DateHeader) {
+            // 🔥 ตกแต่งหัวข้อวันที่
+            holder.tvHeaderDate.text = item.date
+            if (item.dailyTotal > 0) {
+                holder.tvHeaderTotal.text = "+ ${String.format("%,.2f", item.dailyTotal)}"
+                holder.tvHeaderTotal.setTextColor(Color.parseColor("#4CAF50"))
+            } else if (item.dailyTotal < 0) {
+                holder.tvHeaderTotal.text = "${String.format("%,.2f", item.dailyTotal)}"
+                holder.tvHeaderTotal.setTextColor(Color.parseColor("#FF5252"))
             } else {
-                holder.tvWallet.text = "💳 ${wallet.name} (เครดิต)"
-                holder.tvWallet.setTextColor(Color.parseColor("#E57373"))
+                holder.tvHeaderTotal.text = "0.00"
+                holder.tvHeaderTotal.setTextColor(Color.parseColor("#888888"))
             }
-        } else {
-            holder.tvWallet.text = "❓ ไม่พบกระเป๋า"
-        }
 
-        if (item.type == 2 || item.type == 4) {
-            holder.tvAmount.text = "- ${item.amount}"
-            holder.tvAmount.setTextColor(Color.RED)
-        } else {
-            holder.tvAmount.text = "+ ${item.amount}"
-            holder.tvAmount.setTextColor(Color.parseColor("#4CAF50"))
-        }
+        } else if (holder is TransactionViewHolder && item is HistoryItem.TransactionItem) {
+            // 🔥 ตกแต่งรายการปกติ
+            val transaction = item.transaction
+            holder.tvNote.text = transaction.note
 
-        holder.btnDeleteIcon.setOnClickListener { onDeleteClick?.invoke(item) }
-        holder.itemView.setOnClickListener { onItemClick?.invoke(item) }
+            var displayCategory = transaction.category
+            if (transaction.type == 4) {
+                displayCategory = "📤 $displayCategory"
+            } else if (transaction.type == 5) {
+                displayCategory = "📥 $displayCategory"
+            } else {
+                val hasEmoji = displayCategory.any { Character.isSurrogate(it) || Character.getType(it) == Character.OTHER_SYMBOL.toInt() }
+                if (!hasEmoji) {
+                    val icon = when (transaction.category) {
+                        "อาหารและเครื่องดื่ม" -> "🍜"
+                        "การเดินทาง" -> "🚗"
+                        "ช้อปปิ้ง" -> "🛍️"
+                        "เงินเดือน / เงินประจำ" -> "💰"
+                        "พาร์ทไทม์ / ฟรีแลนซ์" -> "💻"
+                        "โบนัส / รางวัล" -> "🎁"
+                        else -> "📝"
+                    }
+                    displayCategory = "$icon $displayCategory"
+                }
+            }
+
+            holder.tvCategory.text = displayCategory
+
+            // ซ่อนวันที่ในรายการย่อยเพราะมี Header โชว์แล้ว
+            holder.tvDate.visibility = View.GONE
+
+            val wallet = walletMap[transaction.walletId]
+            if (wallet != null) {
+                if (wallet.type == 0) {
+                    holder.tvWallet.text = "💰 ${wallet.name} (พื้นฐาน)"
+                    holder.tvWallet.setTextColor(Color.parseColor("#455A64"))
+                } else {
+                    holder.tvWallet.text = "💳 ${wallet.name} (เครดิต)"
+                    holder.tvWallet.setTextColor(Color.parseColor("#E57373"))
+                }
+            } else {
+                holder.tvWallet.text = "❓ ไม่พบกระเป๋า"
+            }
+
+            if (transaction.type == 2 || transaction.type == 4) {
+                holder.tvAmount.text = "- ${String.format("%,.0f", transaction.amount)}"
+                holder.tvAmount.setTextColor(Color.RED)
+            } else {
+                holder.tvAmount.text = "+ ${String.format("%,.0f", transaction.amount)}"
+                holder.tvAmount.setTextColor(Color.parseColor("#4CAF50"))
+            }
+
+            holder.btnDeleteIcon.setOnClickListener { onDeleteClick?.invoke(transaction) }
+            holder.itemView.setOnClickListener { onItemClick?.invoke(transaction) }
+        }
     }
 
-    override fun getItemCount(): Int = transactionList.size
+    override fun getItemCount(): Int = itemList.size
+
+    class HeaderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val tvHeaderDate: TextView = itemView.findViewById(R.id.tvHeaderDate)
+        val tvHeaderTotal: TextView = itemView.findViewById(R.id.tvHeaderTotal)
+    }
 
     class TransactionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvNote: TextView = itemView.findViewById(R.id.tvNote)
