@@ -27,6 +27,25 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:text="ชื่อผู้ใช้"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/edtRegName"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:background="#FFFFFF"
+        android:hint="ชื่อของคุณ (Display Name)"
+        android:inputType="textPersonName"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:layout_marginBottom="24dp"
+        android:elevation="1dp"/>
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:text="อีเมล"
         android:textStyle="bold"
         android:textColor="#333333"

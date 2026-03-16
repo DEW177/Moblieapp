@@ -15,34 +15,35 @@ class MainActivity : AppCompatActivity() {
         val btnHome = findViewById<Button>(R.id.btnHome)
         val btnAddMain = findViewById<Button>(R.id.btnAddMain)
         val btnHistory = findViewById<Button>(R.id.btnHistory)
+        val btnProfile = findViewById<Button>(R.id.btnProfile)
 
-        // 🔥 บังคับเตะออกจากระบบทุกครั้งที่เปิดแอป เพื่อเทสหน้า Login
-        FirebaseAuth.getInstance().signOut()
+        val currentUser = FirebaseAuth.getInstance().currentUser
 
         if (savedInstanceState == null) {
-            bottomMenu?.visibility = View.GONE
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainerView, LoginFragment())
-                .commit()
+            if (currentUser != null) {
+                bottomMenu?.visibility = View.VISIBLE
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragmentContainerView, HomeFragment())
+                    .commit()
+            } else {
+                bottomMenu?.visibility = View.GONE
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragmentContainerView, LoginFragment())
+                    .commit()
+            }
         }
 
-        // ตั้งค่าให้ปุ่มกดสลับหน้าได้
         btnHome.setOnClickListener {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainerView, HomeFragment())
-                .commit()
+            supportFragmentManager.beginTransaction().replace(R.id.fragmentContainerView, HomeFragment()).commit()
         }
-
         btnAddMain.setOnClickListener {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainerView, AddTransactionFragment())
-                .commit()
+            supportFragmentManager.beginTransaction().replace(R.id.fragmentContainerView, AddTransactionFragment()).commit()
         }
-
         btnHistory.setOnClickListener {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainerView, HistoryFragment())
-                .commit()
+            supportFragmentManager.beginTransaction().replace(R.id.fragmentContainerView, HistoryFragment()).commit()
+        }
+        btnProfile.setOnClickListener {
+            supportFragmentManager.beginTransaction().replace(R.id.fragmentContainerView, ProfileFragment()).commit()
         }
     }
 }

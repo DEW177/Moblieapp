@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal"
+    android:background="#F8F9FA">
+
+    <TextView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_marginTop="30dp"
+        android:background="@android:drawable/ic_menu_myplaces"
+        android:backgroundTint="#B0BEC5" />
+
+    <TextView
+        android:id="@+id/tvUserName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="กำลังโหลดชื่อ..."
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:layout_marginTop="16dp" />
+
+    <TextView
+        android:id="@+id/tvUserEmail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="กำลังโหลดอีเมล..."
+        android:textSize="16sp"
+        android:textColor="#757575"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="30dp" />
+
+    <Button
+        android:id="@+id/btnEditName"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:text="✏️ แก้ไขชื่อผู้ใช้"
+        android:textSize="16sp"
+        android:textColor="#333333"
+        android:backgroundTint="#E0E0E0"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnChangePassword"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:text="🔑 เปลี่ยนรหัสผ่าน"
+        android:textSize="16sp"
+        android:textColor="#333333"
+        android:backgroundTint="#E0E0E0"
+        android:layout_marginBottom="30dp" />
+
+    <Button
+        android:id="@+id/btnLogout"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:text="ออกจากระบบ"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#FF9800"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnDeleteAccount"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:text="ลบบัญชีผู้ใช้"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#F44336" />
+
+</LinearLayout>
