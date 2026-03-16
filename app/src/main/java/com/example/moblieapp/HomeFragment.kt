@@ -145,6 +145,17 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             .addSnapshotListener { walletSnapshots, wError ->
                 if (wError != null || walletSnapshots == null || !isAdded) return@addSnapshotListener
 
+                if (walletSnapshots.isEmpty) {
+                    val newWalletRef = dbFire.collection("users").document(userId).collection("wallets").document()
+                    newWalletRef.set(hashMapOf(
+                        "name" to "เงินสด",
+                        "type" to 0,
+                        "balance" to 0.0,
+                        "creditLimit" to 0.0
+                    ))
+                    return@addSnapshotListener // สั่ง return ไปก่อน เดี๋ยวพอมันสร้างเสร็จ Snapshot จะดึงข้อมูลรอบใหม่มาโชว์ให้อัตโนมัติ
+                }
+
                 val wallets = mutableListOf<Wallet>()
                 for (doc in walletSnapshots) {
                     val id = doc.id

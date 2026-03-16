@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.firestore.FirebaseFirestore
 
 class ProfileFragment : Fragment(R.layout.fragment_profile) {
 
@@ -31,6 +32,7 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
 
         val btnEditName = view.findViewById<Button>(R.id.btnEditName)
         val btnChangePassword = view.findViewById<Button>(R.id.btnChangePassword)
+        val btnResetData = view.findViewById<Button>(R.id.btnResetData)
         val btnLogout = view.findViewById<Button>(R.id.btnLogout)
         val btnDeleteAccount = view.findViewById<Button>(R.id.btnDeleteAccount)
 
@@ -44,6 +46,7 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
 
         btnEditName.setOnClickListener { showEditNameDialog() }
         btnChangePassword.setOnClickListener { showChangePasswordDialog() }
+        btnResetData.setOnClickListener { showResetDataDialog() }
         btnLogout.setOnClickListener {
             auth.signOut()
             Toast.makeText(requireContext(), "ออกจากระบบแล้ว", Toast.LENGTH_SHORT).show()
@@ -93,24 +96,30 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
         layout.orientation = LinearLayout.VERTICAL
         layout.setPadding(50, 40, 50, 10)
 
-        val inputOldPassword = EditText(requireContext())
-        inputOldPassword.hint = "รหัสผ่านปัจจุบัน"
-        inputOldPassword.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        layout.addView(inputOldPassword, LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        fun createPasswordInput(hintText: String): Pair<com.google.android.material.textfield.TextInputLayout, EditText> {
+            val til = com.google.android.material.textfield.TextInputLayout(requireContext())
+            til.endIconMode = com.google.android.material.textfield.TextInputLayout.END_ICON_PASSWORD_TOGGLE
+            val et = com.google.android.material.textfield.TextInputEditText(til.context)
+            et.hint = hintText
+            et.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            et.maxLines = 1
+            et.isSingleLine = true
+            til.addView(et)
+            return Pair(til, et)
+        }
 
-        val inputNewPassword = EditText(requireContext())
-        inputNewPassword.hint = "รหัสผ่านใหม่ (ขั้นต่ำ 6 ตัว)"
-        inputNewPassword.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        val newPwdParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-        newPwdParams.topMargin = 20
-        layout.addView(inputNewPassword, newPwdParams)
+        val (tilOld, inputOldPassword) = createPasswordInput("รหัสผ่านปัจจุบัน")
+        layout.addView(tilOld)
 
-        val inputConfirmPassword = EditText(requireContext())
-        inputConfirmPassword.hint = "ยืนยันรหัสผ่านใหม่อีกครั้ง"
-        inputConfirmPassword.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        val confirmPwdParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-        confirmPwdParams.topMargin = 20
-        layout.addView(inputConfirmPassword, confirmPwdParams)
+        val (tilNew, inputNewPassword) = createPasswordInput("รหัสผ่านใหม่ (ขั้นต่ำ 6 ตัว)")
+        val newParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        newParams.topMargin = 20
+        layout.addView(tilNew, newParams)
+
+        val (tilConfirm, inputConfirmPassword) = createPasswordInput("ยืนยันรหัสผ่านใหม่อีกครั้ง")
+        val confirmParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        confirmParams.topMargin = 20
+        layout.addView(tilConfirm, confirmParams)
 
         builder.setView(layout)
         builder.setPositiveButton("ยืนยัน", null)
@@ -129,12 +138,10 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
                 Toast.makeText(requireContext(), "กรุณากรอกข้อมูลให้ครบทุกช่อง", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-
             if (newPassword.length < 6) {
                 Toast.makeText(requireContext(), "รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-
             if (newPassword != confirmPassword) {
                 Toast.makeText(requireContext(), "รหัสผ่านใหม่ทั้ง 2 ช่องไม่ตรงกัน", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
@@ -156,14 +163,57 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
         }
     }
 
+    private fun showResetDataDialog() {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("⚠️ ยืนยันการรีเซ็ตข้อมูล")
+        builder.setMessage("คุณแน่ใจหรือไม่ว่าจะลบข้อมูลทั้งหมด? ข้อมูลนี้จะไม่สามารถกู้คืนได้อีก")
+
+        builder.setPositiveButton("ลบข้อมูลทั้งหมด") { _, _ ->
+            val userId = auth.currentUser?.uid ?: return@setPositiveButton
+            val db = FirebaseFirestore.getInstance()
+
+            // โฟลเดอร์ย่อยที่อยู่ใต้ชื่อผู้ใช้ (ตามในรูปของคุณ)
+            val subcollections = listOf("transactions", "wallets")
+
+            for (collectionName in subcollections) {
+                db.collection("users").document(userId).collection(collectionName)
+                    .get()
+                    .addOnSuccessListener { documents ->
+                        if (!documents.isEmpty) {
+                            val batch = db.batch()
+                            for (document in documents) {
+                                batch.delete(document.reference)
+                            }
+                            batch.commit()
+                        }
+                    }
+            }
+            Toast.makeText(requireContext(), "รีเซ็ตข้อมูลเรียบร้อยแล้ว", Toast.LENGTH_SHORT).show()
+        }
+        builder.setNegativeButton("ยกเลิก", null)
+        builder.show()
+    }
+
     private fun showDeleteAccountDialog() {
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle("⚠️ ยืนยันการลบบัญชี")
         builder.setMessage("คุณแน่ใจหรือไม่ว่าจะลบบัญชีนี้? ข้อมูลทั้งหมดของคุณจะไม่สามารถกู้คืนได้อีก")
+
         builder.setPositiveButton("ลบทิ้งถาวร") { _, _ ->
-            auth.currentUser?.delete()?.addOnSuccessListener {
-                Toast.makeText(requireContext(), "ลบบัญชีเรียบร้อยแล้ว", Toast.LENGTH_SHORT).show()
-                goToLogin()
+            val user = auth.currentUser
+            if (user != null) {
+                // ลบข้อมูลใน Firestore ก่อนลบบัญชี Auth
+                val db = FirebaseFirestore.getInstance()
+                db.collection("Transactions").document(user.uid).delete().addOnCompleteListener {
+                    user.delete()
+                        .addOnSuccessListener {
+                            Toast.makeText(requireContext(), "ลบบัญชีเรียบร้อยแล้ว", Toast.LENGTH_SHORT).show()
+                            goToLogin()
+                        }
+                        .addOnFailureListener { e ->
+                            Toast.makeText(requireContext(), "เพื่อความปลอดภัย กรุณาล็อกเอาท์และล็อกอินใหม่ก่อนกดลบบัญชี", Toast.LENGTH_LONG).show()
+                        }
+                }
             }
         }
         builder.setNegativeButton("ยกเลิก", null)

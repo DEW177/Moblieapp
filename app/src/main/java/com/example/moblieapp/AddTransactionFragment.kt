@@ -162,18 +162,7 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
                 }
 
                 // ถ้ายังไม่มีกระเป๋าเลย ให้สร้างให้ 3 ใบอัตโนมัติ
-                if (wallets.isEmpty()) {
-                    val batch = db.batch()
-                    val w1 = db.collection("users").document(userId).collection("wallets").document()
-                    batch.set(w1, hashMapOf("name" to "เงินสด", "type" to 0, "balance" to 0.0, "creditLimit" to 0.0))
-                    val w2 = db.collection("users").document(userId).collection("wallets").document()
-                    batch.set(w2, hashMapOf("name" to "บัญชีธนาคาร", "type" to 0, "balance" to 0.0, "creditLimit" to 0.0))
-                    val w3 = db.collection("users").document(userId).collection("wallets").document()
-                    batch.set(w3, hashMapOf("name" to "บัตรเครดิต", "type" to 1, "balance" to 0.0, "creditLimit" to 0.0))
 
-                    batch.commit().addOnSuccessListener { loadWallets() } // สร้างเสร็จให้โหลดใหม่
-                    return@addOnSuccessListener
-                }
 
                 walletList = wallets
                 updateWalletSpinner()

@@ -19,20 +19,27 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
         requireActivity().findViewById<View>(R.id.bottomMenu)?.visibility = View.GONE
         auth = FirebaseAuth.getInstance()
 
-        val edtRegName = view.findViewById<EditText>(R.id.edtRegName) // 🔥 ผูกตัวแปรช่องชื่อ
+        val edtRegName = view.findViewById<EditText>(R.id.edtRegName)
         val edtRegEmail = view.findViewById<EditText>(R.id.edtRegEmail)
         val edtRegPassword = view.findViewById<EditText>(R.id.edtRegPassword)
+        val edtRegConfirmPassword = view.findViewById<EditText>(R.id.edtRegConfirmPassword) // 🔥 ผูกตัวแปรยืนยันรหัส
         val btnRegister = view.findViewById<Button>(R.id.btnRegister)
         val tvGoToLogin = view.findViewById<TextView>(R.id.tvGoToLogin)
 
         btnRegister.setOnClickListener {
-            val name = edtRegName.text.toString().trim() // ดึงค่าชื่อ
+            val name = edtRegName.text.toString().trim()
             val email = edtRegEmail.text.toString().trim()
             val password = edtRegPassword.text.toString().trim()
+            val confirmPassword = edtRegConfirmPassword.text.toString().trim() // ดึงค่า
 
-            // 🔥 เพิ่มการเช็คว่ากรอกชื่อหรือยัง
-            if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(context, "กรุณากรอกข้อมูลให้ครบถ้วน", Toast.LENGTH_SHORT).show()
+            if (name.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+                Toast.makeText(context, "กรุณากรอกข้อมูลให้ครบทุกช่อง", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // 🔥 เช็คว่ารหัสผ่าน 2 ช่องตรงกันไหม
+            if (password != confirmPassword) {
+                Toast.makeText(context, "รหัสผ่านทั้ง 2 ช่องไม่ตรงกัน!", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -40,11 +47,8 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
 
             auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
-
                     val safeContext = context ?: return@addOnCompleteListener
-
                     if (task.isSuccessful) {
-                        // 🔥 ถ่ายอดสร้างบัญชีสำเร็จ ให้ทำการอัปเดตชื่อผู้ใช้เข้าไปในโปรไฟล์
                         val user = auth.currentUser
                         val profileUpdates = UserProfileChangeRequest.Builder()
                             .setDisplayName(name)
@@ -53,10 +57,8 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
                         user?.updateProfile(profileUpdates)
                             ?.addOnCompleteListener { profileTask ->
                                 btnRegister.isEnabled = true
-
                                 if (profileTask.isSuccessful) {
                                     Toast.makeText(safeContext, "สมัครสมาชิกสำเร็จ!", Toast.LENGTH_SHORT).show()
-                                    // กลับไปหน้า Login
                                     parentFragmentManager.beginTransaction()
                                         .replace(R.id.fragmentContainerView, LoginFragment())
                                         .commit()
