@@ -8,7 +8,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-// 🔥 คลาสสำหรับแยกว่าข้อมูลก้อนนี้คือ "หัวข้อวันที่" หรือ "รายการปกติ"
 sealed class HistoryItem {
     data class DateHeader(val date: String, val dailyTotal: Double) : HistoryItem()
     data class TransactionItem(val transaction: Transaction) : HistoryItem()
@@ -17,12 +16,12 @@ sealed class HistoryItem {
 class TransactionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private var itemList = listOf<HistoryItem>()
-    private var walletMap = mapOf<Int, Wallet>()
+    // 🔥 เปลี่ยนจาก Int เป็น String เพื่อรับ ID จาก Firebase
+    private var walletMap = mapOf<String, Wallet>()
 
     var onDeleteClick: ((Transaction) -> Unit)? = null
     var onItemClick: ((Transaction) -> Unit)? = null
 
-    // กำหนดรหัสประเภท Layout
     companion object {
         private const val TYPE_HEADER = 0
         private const val TYPE_ITEM = 1
@@ -55,7 +54,6 @@ class TransactionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         val item = itemList[position]
 
         if (holder is HeaderViewHolder && item is HistoryItem.DateHeader) {
-            // 🔥 ตกแต่งหัวข้อวันที่
             holder.tvHeaderDate.text = item.date
             if (item.dailyTotal > 0) {
                 holder.tvHeaderTotal.text = "+ ${String.format("%,.2f", item.dailyTotal)}"
@@ -69,7 +67,6 @@ class TransactionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             }
 
         } else if (holder is TransactionViewHolder && item is HistoryItem.TransactionItem) {
-            // 🔥 ตกแต่งรายการปกติ
             val transaction = item.transaction
             holder.tvNote.text = transaction.note
 
@@ -95,8 +92,6 @@ class TransactionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             }
 
             holder.tvCategory.text = displayCategory
-
-            // ซ่อนวันที่ในรายการย่อยเพราะมี Header โชว์แล้ว
             holder.tvDate.visibility = View.GONE
 
             val wallet = walletMap[transaction.walletId]

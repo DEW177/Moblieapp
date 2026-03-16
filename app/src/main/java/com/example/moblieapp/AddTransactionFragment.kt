@@ -16,15 +16,14 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
 import java.util.Calendar
 
 class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
 
-    private var currentTransactionId: Int = 0
+    private var currentTransactionId: String = ""
     private lateinit var tvDate: TextView
     private var selectedDate: String = ""
     private lateinit var btnIncome: Button
@@ -39,38 +38,25 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
     private lateinit var spinnerToWallet: Spinner
     private lateinit var tvToWalletLabel: TextView
     private var walletList = listOf<Wallet>()
-    private var selectedWalletIdFromEdit: Int = 0
+    private var selectedWalletIdFromEdit: String = "" // 🔥 เปลี่ยนเป็น String
     private var isExpense: Boolean = true
     private var isTransfer: Boolean = false
     private var selectedCategory: String = ""
 
     private val defaultExpenseCategories = listOf(
-        "[HEADER]อาหาร",
-        "🍜 อาหาร & เครื่องดื่ม",
-        "[HEADER]บิล & สาธารณูปโภค",
-        "🏠 ค่าเช่า", "💧 ค่าน้ำประปา", "⚡ ค่าไฟฟ้า", "📱 ค่าโทรศัพท์", "🌐 ค่าอินเตอร์เน็ต", "📺 บิลโทรทัศน์", "🧾 บิลค่าสาธารณูปโภคอื่นๆ", "⛽ ค่าน้ำมัน",
-        "[HEADER]บ้าน",
-        "🛋️ ของใช้ในบ้าน", "🛠️ การบำรุงรักษาบ้าน", "🧹 โฮมเซอร์วิส",
-        "[HEADER]ช้อปปิ้ง",
-        "🛍️ ช้อปปิ้ง", "🧴 ของใช้ส่วนตัว", "💄 แต่งหน้า",
-        "[HEADER]การเดินทาง",
-        "🚗 การเดินทาง", "🔧 การบำรุงรักษายานพาหนะ",
-        "[HEADER]สุขภาพ",
-        "💪 สุขภาพ & ฟิตเนส", "🩺 ตรวจสุขภาพ", "🏋️ ฟิตเนส",
-        "[HEADER]ครอบครัว",
-        "👨‍👩‍👧‍👦 ครอบครัว",
-        "[HEADER]สัตว์เลี้ยง",
-        "🐶 สัตว์เลี้ยง",
-        "[HEADER]การศึกษา",
-        "📚 การศึกษา",
-        "[HEADER]บันเทิง",
-        "🎬 บันเทิง", "🍿 บริการสตรีมมิ่ง", "🎮 เงินสนุก(เติมเกม ซื้อเกม หรืออื่นๆ)",
-        "[HEADER]การเงิน",
-        "📈 การลงทุน", "🛡️ ประกันภัย", "💸 จ่ายดอกเบี้ย",
-        "[HEADER]การให้",
-        "🎁 การให้ & บริจาค",
-        "[HEADER]อื่นๆ",
-        "📝 ค่าใช้จ่ายอื่นๆ"
+        "[HEADER]อาหาร", "🍜 อาหาร & เครื่องดื่ม",
+        "[HEADER]บิล & สาธารณูปโภค", "🏠 ค่าเช่า", "💧 ค่าน้ำประปา", "⚡ ค่าไฟฟ้า", "📱 ค่าโทรศัพท์", "🌐 ค่าอินเตอร์เน็ต", "📺 บิลโทรทัศน์", "🧾 บิลค่าสาธารณูปโภคอื่นๆ", "⛽ ค่าน้ำมัน",
+        "[HEADER]บ้าน", "🛋️ ของใช้ในบ้าน", "🛠️ การบำรุงรักษาบ้าน", "🧹 โฮมเซอร์วิส",
+        "[HEADER]ช้อปปิ้ง", "🛍️ ช้อปปิ้ง", "🧴 ของใช้ส่วนตัว", "💄 แต่งหน้า",
+        "[HEADER]การเดินทาง", "🚗 การเดินทาง", "🔧 การบำรุงรักษายานพาหนะ",
+        "[HEADER]สุขภาพ", "💪 สุขภาพ & ฟิตเนส", "🩺 ตรวจสุขภาพ", "🏋️ ฟิตเนส",
+        "[HEADER]ครอบครัว", "👨‍👩‍👧‍👦 ครอบครัว",
+        "[HEADER]สัตว์เลี้ยง", "🐶 สัตว์เลี้ยง",
+        "[HEADER]การศึกษา", "📚 การศึกษา",
+        "[HEADER]บันเทิง", "🎬 บันเทิง", "🍿 บริการสตรีมมิ่ง", "🎮 เงินสนุก(เติมเกม ซื้อเกม หรืออื่นๆ)",
+        "[HEADER]การเงิน", "📈 การลงทุน", "🛡️ ประกันภัย", "💸 จ่ายดอกเบี้ย",
+        "[HEADER]การให้", "🎁 การให้ & บริจาค",
+        "[HEADER]อื่นๆ", "📝 ค่าใช้จ่ายอื่นๆ"
     )
 
     private val defaultIncomeCategories = listOf(
@@ -117,9 +103,9 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         tvCategorySelector.setOnClickListener { showCategoryDialog() }
 
         arguments?.let { bundle ->
-            currentTransactionId = bundle.getInt("id", 0)
+            currentTransactionId = bundle.getString("id", "")
 
-            if (currentTransactionId != 0) {
+            if (currentTransactionId.isNotEmpty()) {
                 val type = bundle.getInt("type", 2)
                 isExpense = (type == 2)
                 isTransfer = (type == 3)
@@ -136,7 +122,7 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
                 }
 
                 edtNote.setText(bundle.getString("note", ""))
-                selectedWalletIdFromEdit = bundle.getInt("walletId", 0)
+                selectedWalletIdFromEdit = bundle.getString("walletId", "") // 🔥 เปลี่ยนเป็นรับ String
 
                 val dateStr = bundle.getString("date", "")
                 if (dateStr.isNotEmpty()) {
@@ -156,39 +142,60 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         loadWallets()
     }
 
+    // 🔥 เปลี่ยนมาดึงกระเป๋าจาก Firebase แทน Room
     private fun loadWallets() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val db = AppDatabase.getDatabase(requireContext())
-            var wallets = db.walletDao().getAllWallets()
+        val auth = FirebaseAuth.getInstance()
+        val userId = auth.currentUser?.uid ?: return
+        val db = FirebaseFirestore.getInstance()
 
-            if (wallets.isEmpty()) {
-                db.walletDao().insertWallet(Wallet(name = "เงินสด", type = 0, balance = 0.0))
-                db.walletDao().insertWallet(Wallet(name = "บัญชีธนาคาร", type = 0, balance = 0.0))
-                db.walletDao().insertWallet(Wallet(name = "บัตรเครดิต", type = 1, balance = 0.0))
-                wallets = db.walletDao().getAllWallets()
-            }
-            walletList = wallets
+        db.collection("users").document(userId).collection("wallets")
+            .get()
+            .addOnSuccessListener { snapshots ->
+                val wallets = mutableListOf<Wallet>()
+                for (doc in snapshots) {
+                    val id = doc.id
+                    val name = doc.getString("name") ?: ""
+                    val type = doc.getLong("type")?.toInt() ?: 0
+                    val balance = doc.getDouble("balance") ?: 0.0
+                    val creditLimit = doc.getDouble("creditLimit") ?: 0.0
+                    wallets.add(Wallet(id, name, type, balance, creditLimit))
+                }
 
-            withContext(Dispatchers.Main) {
+                // ถ้ายังไม่มีกระเป๋าเลย ให้สร้างให้ 3 ใบอัตโนมัติ
+                if (wallets.isEmpty()) {
+                    val batch = db.batch()
+                    val w1 = db.collection("users").document(userId).collection("wallets").document()
+                    batch.set(w1, hashMapOf("name" to "เงินสด", "type" to 0, "balance" to 0.0, "creditLimit" to 0.0))
+                    val w2 = db.collection("users").document(userId).collection("wallets").document()
+                    batch.set(w2, hashMapOf("name" to "บัญชีธนาคาร", "type" to 0, "balance" to 0.0, "creditLimit" to 0.0))
+                    val w3 = db.collection("users").document(userId).collection("wallets").document()
+                    batch.set(w3, hashMapOf("name" to "บัตรเครดิต", "type" to 1, "balance" to 0.0, "creditLimit" to 0.0))
+
+                    batch.commit().addOnSuccessListener { loadWallets() } // สร้างเสร็จให้โหลดใหม่
+                    return@addOnSuccessListener
+                }
+
+                walletList = wallets
                 updateWalletSpinner()
+
+                // ตั้งค่า Spinner ตามข้อมูลที่กด Edit มา
                 val allWalletNames = walletList.map { if (it.type == 0) "💰 ${it.name}" else "💳 ${it.name}" }
                 spinnerToWallet.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, allWalletNames)
 
-                if (selectedWalletIdFromEdit != 0) {
+                if (selectedWalletIdFromEdit.isNotEmpty()) {
                     val filteredWallets = if (isExpense || isTransfer) walletList else walletList.filter { it.type == 0 }
                     val selectedIndex = filteredWallets.indexOfFirst { it.id == selectedWalletIdFromEdit }
                     if (selectedIndex >= 0) spinnerWallet.setSelection(selectedIndex)
                 }
 
                 arguments?.let { bundle ->
-                    val toWalletId = bundle.getInt("toWalletId", 0)
-                    if (isTransfer && toWalletId != 0) {
+                    val toWalletId = bundle.getString("toWalletId", "")
+                    if (isTransfer && toWalletId.isNotEmpty()) {
                         val toIndex = walletList.indexOfFirst { it.id == toWalletId }
                         if (toIndex >= 0) spinnerToWallet.setSelection(toIndex)
                     }
                 }
             }
-        }
     }
 
     private fun updateWalletSpinner() {
@@ -200,7 +207,7 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
 
     private fun setupListeners() {
         btnIncome.setOnClickListener {
-            if (currentTransactionId != 0 && isTransfer) return@setOnClickListener
+            if (currentTransactionId.isNotEmpty() && isTransfer) return@setOnClickListener
             isExpense = false
             isTransfer = false
             updateTypeSelection()
@@ -208,7 +215,7 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         }
 
         btnExpense.setOnClickListener {
-            if (currentTransactionId != 0 && isTransfer) return@setOnClickListener
+            if (currentTransactionId.isNotEmpty() && isTransfer) return@setOnClickListener
             isExpense = true
             isTransfer = false
             updateTypeSelection()
@@ -216,7 +223,7 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         }
 
         btnTransfer.setOnClickListener {
-            if (currentTransactionId != 0 && isTransfer) return@setOnClickListener
+            if (currentTransactionId.isNotEmpty() && isTransfer) return@setOnClickListener
             isTransfer = true
             updateTypeSelection()
             updateWalletSpinner()
@@ -280,7 +287,6 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         prefs.edit().putStringSet(key, set).apply()
     }
 
-    // 🔥 ฟังก์ชันสำหรับลบหมวดหมู่ที่สร้างขึ้นเอง
     private fun deleteCustomCategory(forExpense: Boolean, category: String) {
         val prefs = requireContext().getSharedPreferences("Categories", Context.MODE_PRIVATE)
         val key = if (forExpense) "custom_expense" else "custom_income"
@@ -295,7 +301,7 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
 
         val customCats = getCustomCategories(isExpense)
         if (customCats.isNotEmpty()) {
-            list.add("[HEADER]หมวดหมู่ของฉัน (กดค้างเพื่อลบ)") // เพิ่มคำแนะนำให้ผู้ใช้
+            list.add("[HEADER]หมวดหมู่ของฉัน (กดค้างเพื่อลบ)")
             list.addAll(customCats)
         }
         list.add("➕ เพิ่มหมวดหมู่ใหม่...")
@@ -349,24 +355,21 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         }
 
         val dialog = builder.create()
-        dialog.show() // ต้องโชว์ก่อนถึงจะจับ Event การกดค้างได้
+        dialog.show()
 
-        // 🔥 เพิ่มการจับ Event กดค้าง (Long Click) สำหรับการลบหมวดหมู่ที่สร้างเอง
         dialog.listView.setOnItemLongClickListener { _, _, position, _ ->
             val selected = list[position]
             val customCategoriesList = getCustomCategories(isExpense)
 
             if (customCategoriesList.contains(selected)) {
-                // ถ้าเป็นหมวดหมู่ที่สร้างเอง ให้เด้งถามยืนยันการลบ
                 AlertDialog.Builder(requireContext())
                     .setTitle("ลบหมวดหมู่")
                     .setMessage("คุณต้องการลบหมวดหมู่ '$selected' ใช่หรือไม่?")
                     .setPositiveButton("ลบ") { _, _ ->
                         deleteCustomCategory(isExpense, selected)
-                        dialog.dismiss() // ปิดหน้าต่างเดิม
-                        showCategoryDialog() // เปิดใหม่เพื่อรีเฟรชรายการ
+                        dialog.dismiss()
+                        showCategoryDialog()
 
-                        // ถ้าลบหมวดหมู่ที่กำลังเลือกใช้อยู่ ให้รีเซ็ตกลับไปเป็นค่าเริ่มต้น
                         if (selectedCategory == selected) {
                             selectedCategory = if (isExpense) defaultExpenseCategories.first { !it.startsWith("[HEADER]") } else defaultIncomeCategories[0]
                             tvCategorySelector.text = selectedCategory
@@ -376,7 +379,6 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
                     .show()
                 true
             } else if (!selected.startsWith("[HEADER]") && selected != "➕ เพิ่มหมวดหมู่ใหม่...") {
-                // แจ้งเตือนว่าหมวดหมู่พื้นฐานลบไม่ได้
                 Toast.makeText(requireContext(), "หมวดหมู่พื้นฐานไม่สามารถลบได้", Toast.LENGTH_SHORT).show()
                 true
             } else {
@@ -416,57 +418,90 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
             edtAmount.error = "กรุณากรอกจำนวนเงิน"
             return
         }
-        val amount = amountText.toDouble()
-        val filteredWallets = if (isExpense || isTransfer) walletList else walletList.filter { it.type == 0 }
-        val selectedWalletIndex = spinnerWallet.selectedItemPosition
-        val targetWalletId = if (selectedWalletIndex >= 0 && filteredWallets.isNotEmpty()) filteredWallets[selectedWalletIndex].id else 1
 
-        if (isTransfer) {
-            val toWalletIndex = spinnerToWallet.selectedItemPosition
-            val toWalletId = if (toWalletIndex >= 0 && walletList.isNotEmpty()) walletList[toWalletIndex].id else 1
-
-            if (targetWalletId == toWalletId) {
-                Toast.makeText(requireContext(), "ต้นทางและปลายทางต้องไม่เหมือนกัน", Toast.LENGTH_SHORT).show()
-                return
-            }
-
-            val transaction = Transaction(
-                id = currentTransactionId, type = 3, amount = amount, category = "โอนเงิน",
-                note = edtNote.text.toString(), date = selectedDate, walletId = targetWalletId, toWalletId = toWalletId
-            )
-
-            lifecycleScope.launch(Dispatchers.IO) {
-                val db = AppDatabase.getDatabase(requireContext())
-                if (currentTransactionId == 0) db.transactionDao().insertTransaction(transaction)
-                else db.transactionDao().updateTransaction(transaction)
-
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), if (currentTransactionId == 0) "โอนเงินเรียบร้อย" else "อัปเดตข้อมูลเรียบร้อย", Toast.LENGTH_SHORT).show()
-                    parentFragmentManager.popBackStack()
-                }
-            }
+        val auth = FirebaseAuth.getInstance()
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            Toast.makeText(requireContext(), "กรุณาล็อกอินก่อนบันทึกข้อมูล", Toast.LENGTH_SHORT).show()
             return
         }
 
-        val transaction = Transaction(
-            id = currentTransactionId,
-            type = if (isExpense) 2 else 1,
-            amount = amount,
-            category = selectedCategory,
-            note = edtNote.text.toString(),
-            date = selectedDate,
-            walletId = targetWalletId
+        val userId = currentUser.uid
+
+        val amount = amountText.toDouble()
+        val filteredWallets = if (isExpense || isTransfer) walletList else walletList.filter { it.type == 0 }
+        val selectedWalletIndex = spinnerWallet.selectedItemPosition
+
+        // 🔥 ดึง ID แบบ String จากรายการกระเป๋า
+        val targetWalletId = if (selectedWalletIndex >= 0 && filteredWallets.isNotEmpty()) filteredWallets[selectedWalletIndex].id else ""
+
+        btnSave.isEnabled = false
+
+        val db = FirebaseFirestore.getInstance()
+
+        val transactionRef = if (currentTransactionId.isEmpty()) {
+            db.collection("users").document(userId).collection("transactions").document()
+        } else {
+            db.collection("users").document(userId).collection("transactions").document(currentTransactionId)
+        }
+
+        if (isTransfer) {
+            val toWalletIndex = spinnerToWallet.selectedItemPosition
+            val toWalletId = if (toWalletIndex >= 0 && walletList.isNotEmpty()) walletList[toWalletIndex].id else ""
+
+            if (targetWalletId == toWalletId || targetWalletId.isEmpty() || toWalletId.isEmpty()) {
+                Toast.makeText(requireContext(), "กรุณาเลือกต้นทางและปลายทางให้ถูกต้องและไม่ซ้ำกัน", Toast.LENGTH_SHORT).show()
+                btnSave.isEnabled = true
+                return
+            }
+
+            val transactionData = hashMapOf(
+                "type" to 3,
+                "amount" to amount,
+                "category" to "โอนเงิน",
+                "note" to edtNote.text.toString(),
+                "date" to selectedDate,
+                "walletId" to targetWalletId,
+                "toWalletId" to toWalletId,
+                "timestamp" to FieldValue.serverTimestamp()
+            )
+
+            transactionRef.set(transactionData)
+                .addOnSuccessListener {
+                    btnSave.isEnabled = true
+                    val safeContext = context ?: return@addOnSuccessListener
+                    val msg = if (currentTransactionId.isEmpty()) "โอนเงินเรียบร้อย" else "อัปเดตข้อมูลเรียบร้อย"
+                    Toast.makeText(safeContext, msg, Toast.LENGTH_SHORT).show()
+                    parentFragmentManager.popBackStack()
+                }
+                .addOnFailureListener { e ->
+                    btnSave.isEnabled = true
+                    Toast.makeText(context, "ผิดพลาด: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            return
+        }
+
+        val transactionData = hashMapOf(
+            "type" to if (isExpense) 2 else 1,
+            "amount" to amount,
+            "category" to selectedCategory,
+            "note" to edtNote.text.toString(),
+            "date" to selectedDate,
+            "walletId" to targetWalletId,
+            "timestamp" to FieldValue.serverTimestamp()
         )
 
-        lifecycleScope.launch(Dispatchers.IO) {
-            val db = AppDatabase.getDatabase(requireContext())
-            if (currentTransactionId == 0) db.transactionDao().insertTransaction(transaction)
-            else db.transactionDao().updateTransaction(transaction)
-
-            withContext(Dispatchers.Main) {
-                Toast.makeText(requireContext(), if (currentTransactionId == 0) "บันทึกเรียบร้อย" else "อัปเดตข้อมูลเรียบร้อย", Toast.LENGTH_SHORT).show()
+        transactionRef.set(transactionData)
+            .addOnSuccessListener {
+                btnSave.isEnabled = true
+                val safeContext = context ?: return@addOnSuccessListener
+                val msg = if (currentTransactionId.isEmpty()) "บันทึกเรียบร้อย" else "อัปเดตข้อมูลเรียบร้อย"
+                Toast.makeText(safeContext, msg, Toast.LENGTH_SHORT).show()
                 parentFragmentManager.popBackStack()
             }
-        }
+            .addOnFailureListener { e ->
+                btnSave.isEnabled = true
+                Toast.makeText(context, "ผิดพลาด: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 }

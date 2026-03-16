@@ -8,18 +8,15 @@ import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast // 🔥 เพิ่ม Import Toast ตรงนี้
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import java.util.Calendar
 
 class HomeFragment : Fragment(R.layout.fragment_home) {
@@ -69,7 +66,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
 
         btnSeeAllRecent.setOnClickListener {
-            Toast.makeText(requireContext(), "ไปหน้า History", Toast.LENGTH_SHORT).show()
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainerView, HistoryFragment())
+                .commit()
         }
 
         btnChartExpense.setOnClickListener {
@@ -107,11 +106,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         loadBalanceAndChart()
     }
 
-    override fun onResume() {
-        super.onResume()
-        loadBalanceAndChart()
-    }
-
     private fun updateChartToggleUI() {
         if (isShowingExpenseChart) {
             btnChartExpense.setBackgroundColor(Color.parseColor("#FF5252"))
@@ -141,74 +135,110 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     }
 
     private fun loadBalanceAndChart() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val db = AppDatabase.getDatabase(requireContext())
-            allTransactions = db.transactionDao().getAllTransactions()
-            val wallets = db.walletDao().getAllWallets()
+        val auth = FirebaseAuth.getInstance()
+        val userId = auth.currentUser?.uid ?: return
 
-            var totalIncome = 0.0
-            var totalExpense = 0.0
-            val walletBalances = mutableMapOf<Int, Double>()
-            val walletTypes = mutableMapOf<Int, Int>()
+        val dbFire = FirebaseFirestore.getInstance()
 
-            for (w in wallets) {
-                walletBalances[w.id] = w.balance
-                walletTypes[w.id] = w.type
-            }
+        // ดึงข้อมูลกระเป๋าเงินแบบ Real-time
+        dbFire.collection("users").document(userId).collection("wallets")
+            .addSnapshotListener { walletSnapshots, wError ->
+                if (wError != null || walletSnapshots == null || !isAdded) return@addSnapshotListener
 
-            for (t in allTransactions) {
-                val walletType = walletTypes[t.walletId] ?: 0
+                val wallets = mutableListOf<Wallet>()
+                for (doc in walletSnapshots) {
+                    val id = doc.id
+                    val name = doc.getString("name") ?: ""
+                    val type = doc.getLong("type")?.toInt() ?: 0
+                    val balance = doc.getDouble("balance") ?: 0.0
+                    val creditLimit = doc.getDouble("creditLimit") ?: 0.0
+                    wallets.add(Wallet(id, name, type, balance, creditLimit))
+                }
 
-                when (t.type) {
-                    1 -> {
-                        walletBalances[t.walletId] = (walletBalances[t.walletId] ?: 0.0) + t.amount
-                        if (walletType == 0) totalIncome += t.amount
-                    }
-                    2 -> {
-                        walletBalances[t.walletId] = (walletBalances[t.walletId] ?: 0.0) - t.amount
-                        totalExpense += t.amount
-                    }
-                    3 -> {
-                        walletBalances[t.walletId] = (walletBalances[t.walletId] ?: 0.0) - t.amount
-                        t.toWalletId?.let { toId ->
-                            walletBalances[toId] = (walletBalances[toId] ?: 0.0) + t.amount
+                // ดึงข้อมูลธุรกรรมแบบ Real-time
+                dbFire.collection("users").document(userId).collection("transactions")
+                    .addSnapshotListener { transSnapshots, tError ->
+                        if (tError != null || transSnapshots == null || !isAdded) return@addSnapshotListener
+
+                        val tList = mutableListOf<Transaction>()
+                        for (doc in transSnapshots) {
+                            val id = doc.id
+                            val type = doc.getLong("type")?.toInt() ?: 1
+                            val amount = doc.getDouble("amount") ?: 0.0
+                            val category = doc.getString("category") ?: ""
+                            val note = doc.getString("note") ?: ""
+                            val date = doc.getString("date") ?: ""
+                            val walletId = doc.get("walletId")?.toString() ?: ""
+                            val toWalletId = doc.get("toWalletId")?.toString()
+
+                            tList.add(Transaction(id, type, amount, category, note, date, walletId, toWalletId))
                         }
+                        allTransactions = tList
+
+                        // คำนวณยอดเงิน
+                        var totalIncome = 0.0
+                        var totalExpense = 0.0
+                        val walletBalances = mutableMapOf<String, Double>()
+                        val walletTypes = mutableMapOf<String, Int>()
+
+                        for (w in wallets) {
+                            walletBalances[w.id] = w.balance
+                            walletTypes[w.id] = w.type
+                        }
+
+                        for (t in allTransactions) {
+                            val walletType = walletTypes[t.walletId] ?: 0
+
+                            when (t.type) {
+                                1 -> {
+                                    walletBalances[t.walletId] = (walletBalances[t.walletId] ?: 0.0) + t.amount
+                                    if (walletType == 0) totalIncome += t.amount
+                                }
+                                2 -> {
+                                    walletBalances[t.walletId] = (walletBalances[t.walletId] ?: 0.0) - t.amount
+                                    totalExpense += t.amount
+                                }
+                                3 -> {
+                                    walletBalances[t.walletId] = (walletBalances[t.walletId] ?: 0.0) - t.amount
+                                    t.toWalletId?.let { toId ->
+                                        walletBalances[toId] = (walletBalances[toId] ?: 0.0) + t.amount
+                                    }
+                                }
+                            }
+                        }
+
+                        val netWorth = walletBalances.values.sum()
+
+                        if (!isAdded) return@addSnapshotListener
+                        txtBalance.text = "${String.format("%,.2f", netWorth)} THB"
+                        txtIncome.text = "รายรับ\n+ ${String.format("%,.2f", totalIncome)}"
+                        txtExpense.text = "รายจ่าย\n- ${String.format("%,.2f", totalExpense)}"
+
+                        layoutWallets.removeAllViews()
+                        for (w in wallets) {
+                            val currentBalance = walletBalances[w.id] ?: 0.0
+                            val walletView = TextView(requireContext())
+
+                            if (w.type == 0) {
+                                walletView.text = "💰 ${w.name}: ${String.format("%,.2f", currentBalance)} ฿"
+                                walletView.setTextColor(Color.parseColor("#455A64"))
+                            } else {
+                                val debt = if (currentBalance < 0) currentBalance * -1 else 0.0
+                                val remainingCredit = w.creditLimit + currentBalance
+                                walletView.text = "💳 ${w.name}: รูดไป ${String.format("%,.2f", debt)} ฿\n    (วงเงินคงเหลือ: ${String.format("%,.2f", remainingCredit)} ฿)"
+                                walletView.setTextColor(Color.parseColor("#E57373"))
+                            }
+
+                            walletView.textSize = 16f
+                            walletView.setPadding(0, 0, 0, 16)
+                            layoutWallets.addView(walletView)
+                        }
+
+                        setupLineChart()
+                        renderTopSpending()
+                        renderRecentTransactions()
                     }
-                }
             }
-
-            val netWorth = walletBalances.values.sum()
-
-            withContext(Dispatchers.Main) {
-                txtBalance.text = "${String.format("%,.2f", netWorth)} THB"
-                txtIncome.text = "รายรับ\n+ ${String.format("%,.2f", totalIncome)}"
-                txtExpense.text = "รายจ่าย\n- ${String.format("%,.2f", totalExpense)}"
-
-                layoutWallets.removeAllViews()
-                for (w in wallets) {
-                    val currentBalance = walletBalances[w.id] ?: 0.0
-                    val walletView = TextView(requireContext())
-
-                    if (w.type == 0) {
-                        walletView.text = "💰 ${w.name}: ${String.format("%,.2f", currentBalance)} ฿"
-                        walletView.setTextColor(Color.parseColor("#455A64"))
-                    } else {
-                        val debt = if (currentBalance < 0) currentBalance * -1 else 0.0
-                        val remainingCredit = w.creditLimit + currentBalance
-                        walletView.text = "💳 ${w.name}: รูดไป ${String.format("%,.2f", debt)} ฿\n    (วงเงินคงเหลือ: ${String.format("%,.2f", remainingCredit)} ฿)"
-                        walletView.setTextColor(Color.parseColor("#E57373"))
-                    }
-
-                    walletView.textSize = 16f
-                    walletView.setPadding(0, 0, 0, 16)
-                    layoutWallets.addView(walletView)
-                }
-
-                setupLineChart()
-                renderTopSpending()
-                renderRecentTransactions()
-            }
-        }
     }
 
     private fun setupLineChart() {
@@ -339,11 +369,13 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             emptyView.text = "ไม่มีรายการใช้จ่าย"
             emptyView.gravity = Gravity.CENTER
             emptyView.setPadding(0, 20, 0, 20)
-            emptyView.setTextColor(Color.parseColor("#888888")) // 🔥 แก้ไขตรงนี้
+
+            // 🔥 เปลี่ยนจาก .textColor = ... เป็น .setTextColor(...)
+            emptyView.setTextColor(Color.parseColor("#888888"))
+
             layoutTopSpending.addView(emptyView)
             return
         }
-
         val sortedList = categorySum.toList().sortedByDescending { it.second }.take(3)
 
         for ((category, amount) in sortedList) {
@@ -355,7 +387,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             val catText = TextView(requireContext())
             catText.text = "$category\n฿ ${String.format("%,.0f", amount)}"
             catText.textSize = 15f
-            catText.setTextColor(Color.parseColor("#333333")) // 🔥 แก้ไขตรงนี้
+            catText.setTextColor(Color.parseColor("#333333"))
             catText.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
             val pctValue = if (totalSpent > 0) (amount / totalSpent) * 100 else 0.0
@@ -363,7 +395,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             pctText.text = "${String.format("%.0f", pctValue)}%"
             pctText.textSize = 16f
             pctText.setTypeface(null, Typeface.BOLD)
-            pctText.setTextColor(Color.parseColor("#FF5252")) // 🔥 แก้ไขตรงนี้
+            pctText.setTextColor(Color.parseColor("#FF5252"))
 
             row.addView(catText)
             row.addView(pctText)
@@ -384,12 +416,12 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             emptyView.text = "ยังไม่มีธุรกรรม"
             emptyView.gravity = Gravity.CENTER
             emptyView.setPadding(0, 20, 0, 20)
-            emptyView.setTextColor(Color.parseColor("#888888")) // 🔥 แก้ไขตรงนี้
+            emptyView.setTextColor(Color.parseColor("#888888"))
             layoutRecentTransactions.addView(emptyView)
             return
         }
 
-        val recentList = allTransactions.sortedByDescending { it.id }.take(4)
+        val recentList = allTransactions.sortedByDescending { it.date }.reversed().take(4)
 
         for (t in recentList) {
             val row = LinearLayout(requireContext())
@@ -408,7 +440,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
             titleText.text = "$displayCategory\n${t.date}"
             titleText.textSize = 15f
-            titleText.setTextColor(Color.parseColor("#333333")) // 🔥 แก้ไขตรงนี้
+            titleText.setTextColor(Color.parseColor("#333333"))
             titleText.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
             val amountText = TextView(requireContext())
@@ -418,15 +450,15 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             when (t.type) {
                 1 -> {
                     amountText.text = "+${String.format("%,.0f", t.amount)}"
-                    amountText.setTextColor(Color.parseColor("#4CAF50")) // 🔥 แก้ไขตรงนี้
+                    amountText.setTextColor(Color.parseColor("#4CAF50"))
                 }
                 2 -> {
                     amountText.text = "-${String.format("%,.0f", t.amount)}"
-                    amountText.setTextColor(Color.parseColor("#FF5252")) // 🔥 แก้ไขตรงนี้
+                    amountText.setTextColor(Color.parseColor("#FF5252"))
                 }
                 3 -> {
                     amountText.text = String.format("%,.0f", t.amount)
-                    amountText.setTextColor(Color.parseColor("#26A69A")) // 🔥 แก้ไขตรงนี้
+                    amountText.setTextColor(Color.parseColor("#26A69A"))
                 }
             }
 

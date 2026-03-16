@@ -13,13 +13,11 @@ import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.Calendar
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 
 class HistoryFragment : Fragment(R.layout.fragment_history) {
 
@@ -56,7 +54,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         val spinnerMonthAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, months)
         spinnerMonth.adapter = spinnerMonthAdapter
 
-        val currentMonth = Calendar.getInstance().get(Calendar.MONTH) + 1
+        val currentMonth = java.util.Calendar.getInstance().get(java.util.Calendar.MONTH) + 1
         spinnerMonth.setSelection(currentMonth)
 
         spinnerMonth.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -88,7 +86,7 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
 
         adapter.onItemClick = { transaction ->
             val bundle = Bundle()
-            bundle.putInt("id", transaction.id)
+            bundle.putString("id", transaction.id)
 
             val realType = if (transaction.type == 4 || transaction.type == 5) 3 else transaction.type
             bundle.putInt("type", realType)
@@ -98,12 +96,13 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             bundle.putString("note", transaction.note)
             bundle.putString("date", transaction.date)
 
+            // 🔥 แก้ไขส่วนนี้ให้ส่ง ID แบบ String
             if (transaction.type == 5) {
-                bundle.putInt("walletId", transaction.toWalletId ?: 1)
-                bundle.putInt("toWalletId", transaction.walletId)
+                bundle.putString("walletId", transaction.toWalletId ?: "")
+                bundle.putString("toWalletId", transaction.walletId)
             } else {
-                bundle.putInt("walletId", transaction.walletId)
-                transaction.toWalletId?.let { bundle.putInt("toWalletId", it) }
+                bundle.putString("walletId", transaction.walletId)
+                transaction.toWalletId?.let { bundle.putString("toWalletId", it) }
             }
 
             val addFragment = AddTransactionFragment()
@@ -118,39 +117,65 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
         loadData()
     }
 
-    override fun onResume() {
-        super.onResume()
-        loadData()
-    }
-
     private fun loadData() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val db = AppDatabase.getDatabase(requireContext())
-            allTransactions = db.transactionDao().getAllTransactions()
-            allWallets = db.walletDao().getAllWallets()
+        val auth = FirebaseAuth.getInstance()
+        val userId = auth.currentUser?.uid ?: return
+        val dbFire = FirebaseFirestore.getInstance()
 
-            val walletNames = mutableListOf("ดูทุกกระเป๋า")
-            filterWalletList.clear()
-            filterWalletList.add(null)
+        // โหลดกระเป๋าเงินก่อน
+        dbFire.collection("users").document(userId).collection("wallets")
+            .addSnapshotListener { walletSnapshots, wError ->
+                if (wError != null || walletSnapshots == null || !isAdded) return@addSnapshotListener
 
-            for (w in allWallets) {
-                val prefix = if (w.type == 0) "💰" else "💳"
-                walletNames.add("$prefix ${w.name}")
-                filterWalletList.add(w)
-            }
+                val wList = mutableListOf<Wallet>()
+                for (doc in walletSnapshots) {
+                    wList.add(Wallet(doc.id, doc.getString("name") ?: "", doc.getLong("type")?.toInt() ?: 0, doc.getDouble("balance") ?: 0.0, doc.getDouble("creditLimit") ?: 0.0))
+                }
+                allWallets = wList
 
-            withContext(Dispatchers.Main) {
-                val walletSpinnerAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, walletNames)
-                spinnerWalletFilter.adapter = walletSpinnerAdapter
+                val walletNames = mutableListOf("ดูทุกกระเป๋า")
+                filterWalletList.clear()
+                filterWalletList.add(null)
 
-                val currentWalletSelection = spinnerWalletFilter.selectedItemPosition
-                if (currentWalletSelection >= 0 && currentWalletSelection < walletNames.size) {
-                    spinnerWalletFilter.setSelection(currentWalletSelection)
+                for (w in allWallets) {
+                    val prefix = if (w.type == 0) "💰" else "💳"
+                    walletNames.add("$prefix ${w.name}")
+                    filterWalletList.add(w)
                 }
 
-                filterData()
+                if (isAdded) {
+                    val currentWalletSelection = spinnerWalletFilter.selectedItemPosition
+                    val walletSpinnerAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, walletNames)
+                    spinnerWalletFilter.adapter = walletSpinnerAdapter
+
+                    if (currentWalletSelection in walletNames.indices) {
+                        spinnerWalletFilter.setSelection(currentWalletSelection)
+                    }
+                }
+
+                // โหลดรายการ
+                dbFire.collection("users").document(userId).collection("transactions")
+                    .orderBy("timestamp", Query.Direction.DESCENDING)
+                    .addSnapshotListener { transSnapshots, tError ->
+                        if (tError != null || transSnapshots == null || !isAdded) return@addSnapshotListener
+
+                        val tList = mutableListOf<Transaction>()
+                        for (doc in transSnapshots) {
+                            val id = doc.id
+                            val type = doc.getLong("type")?.toInt() ?: 1
+                            val amount = doc.getDouble("amount") ?: 0.0
+                            val category = doc.getString("category") ?: ""
+                            val note = doc.getString("note") ?: ""
+                            val date = doc.getString("date") ?: ""
+                            val walletId = doc.get("walletId")?.toString() ?: ""
+                            val toWalletId = doc.get("toWalletId")?.toString()
+
+                            tList.add(Transaction(id, type, amount, category, note, date, walletId, toWalletId))
+                        }
+                        allTransactions = tList
+                        filterData()
+                    }
             }
-        }
     }
 
     private fun filterData() {
@@ -188,9 +213,11 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
 
         val displayList = mutableListOf<Transaction>()
         for (t in filteredForWallet) {
-            if (t.type == 3 && t.toWalletId != null) {
+            val safeToWalletId = t.toWalletId // 🔥 ดึงมาเก็บใน val ก่อน เพื่อให้ Kotlin สบายใจ
+
+            if (t.type == 3 && safeToWalletId != null) {
                 val srcWallet = allWallets.find { it.id == t.walletId }
-                val destWallet = allWallets.find { it.id == t.toWalletId }
+                val destWallet = allWallets.find { it.id == safeToWalletId }
 
                 if (selectedWallet == null || selectedWallet.id == t.walletId) {
                     displayList.add(t.copy(
@@ -199,10 +226,10 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
                     ))
                 }
 
-                if (selectedWallet == null || selectedWallet.id == t.toWalletId) {
+                if (selectedWallet == null || selectedWallet.id == safeToWalletId) {
                     displayList.add(t.copy(
                         type = 5,
-                        walletId = t.toWalletId,
+                        walletId = safeToWalletId,
                         toWalletId = t.walletId,
                         category = "รับโอนจาก ${srcWallet?.name ?: "?"}"
                     ))
@@ -212,13 +239,11 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             }
         }
 
-        // 🔥 สร้างกลุ่มแบ่งตามวันที่
         val groupedByDate = displayList.groupBy { it.date }
 
-        // เรียงวันที่จากใหม่ไปเก่า
         val sortedDates = groupedByDate.keys.sortedByDescending { dateStr ->
             val parts = dateStr.split("/")
-            if(parts.size == 3) {
+            if (parts.size == 3) {
                 val d = parts[0].trim().padStart(2, '0')
                 val m = parts[1].trim().padStart(2, '0')
                 val y = parts[2].trim()
@@ -228,19 +253,16 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
 
         val finalHistoryItems = mutableListOf<HistoryItem>()
         for (date in sortedDates) {
-            val dailyTransactions = groupedByDate[date]!!.sortedByDescending { it.id } // เรียงรายการใหม่สุดขึ้นก่อน
+            val dailyTransactions = groupedByDate[date]!!
             var dailyTotal = 0.0
 
-            // คำนวณยอดรวมของวันนั้นๆ (รับ - จ่าย)
             for (t in dailyTransactions) {
                 if (t.type == 1 || t.type == 5) dailyTotal += t.amount
                 else if (t.type == 2 || t.type == 4) dailyTotal -= t.amount
             }
 
-            // ใส่ Header ของวันที่
             finalHistoryItems.add(HistoryItem.DateHeader(date, dailyTotal))
 
-            // ใส่รายการย่อยที่อยู่ในวันนั้นๆ
             for (t in dailyTransactions) {
                 finalHistoryItems.add(HistoryItem.TransactionItem(t))
             }
@@ -270,16 +292,17 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
     }
 
     private fun deleteFromDb(transaction: Transaction) {
-        val realTransaction = allTransactions.find { it.id == transaction.id }
-        if (realTransaction != null) {
-            lifecycleScope.launch(Dispatchers.IO) {
-                val db = AppDatabase.getDatabase(requireContext())
-                db.transactionDao().deleteTransaction(realTransaction)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), "ลบแล้ว", Toast.LENGTH_SHORT).show()
-                    loadData()
-                }
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val dbFire = FirebaseFirestore.getInstance()
+
+        dbFire.collection("users").document(userId)
+            .collection("transactions").document(transaction.id)
+            .delete()
+            .addOnSuccessListener {
+                Toast.makeText(requireContext(), "ลบข้อมูลสำเร็จ", Toast.LENGTH_SHORT).show()
             }
-        }
+            .addOnFailureListener {
+                Toast.makeText(requireContext(), "ลบข้อมูลล้มเหลว", Toast.LENGTH_SHORT).show()
+            }
     }
 }

@@ -1,16 +1,13 @@
 package com.example.moblieapp
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-
-@Entity(tableName = "transactions")
+// ไม่ต้องมี @Entity หรือ @PrimaryKey แล้วครับ เพราะเราใช้ Firebase 100%
 data class Transaction(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val type: Int,          // 1 = รายรับ, 2 = รายจ่าย, 3 = โอนระหว่างกระเป๋า
-    val amount: Double,
-    val category: String,
-    val note: String,
-    val date: String,
-    val walletId: Int,
-    val toWalletId: Int? = null
+    var id: String = "",
+    var type: Int = 1,
+    var amount: Double = 0.0,
+    var category: String = "",
+    var note: String = "",
+    var date: String = "",
+    var walletId: String = "",
+    var toWalletId: String? = null
 )
