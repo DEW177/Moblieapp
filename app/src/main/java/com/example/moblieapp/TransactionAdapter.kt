@@ -97,10 +97,10 @@ class TransactionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             val wallet = walletMap[transaction.walletId]
             if (wallet != null) {
                 if (wallet.type == 0) {
-                    holder.tvWallet.text = "💰 ${wallet.name} (พื้นฐาน)"
+                    holder.tvWallet.text = "💰 ${wallet.name}"
                     holder.tvWallet.setTextColor(Color.parseColor("#455A64"))
                 } else {
-                    holder.tvWallet.text = "💳 ${wallet.name} (เครดิต)"
+                    holder.tvWallet.text = "💳 ${wallet.name}"
                     holder.tvWallet.setTextColor(Color.parseColor("#E57373"))
                 }
             } else {
