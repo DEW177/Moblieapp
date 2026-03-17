@@ -15,7 +15,6 @@ class WalletAdapter(
 
     inner class WalletViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvWalletName: TextView = itemView.findViewById(R.id.tvWalletName)
-        val tvWalletType: TextView = itemView.findViewById(R.id.tvWalletType)
         val btnEditWallet: ImageView = itemView.findViewById(R.id.btnEditWallet)
         val btnDeleteWallet: ImageView = itemView.findViewById(R.id.btnDeleteWallet)
     }
@@ -29,12 +28,6 @@ class WalletAdapter(
         val wallet = wallets[position]
         holder.tvWalletName.text = wallet.name
 
-        // 🔥 แยกการแสดงผลประเภทและวงเงิน
-        if (wallet.type == 0) {
-            holder.tvWalletType.text = "ประเภท: กระเป๋าเงินขั้นพื้นฐาน"
-        } else {
-            holder.tvWalletType.text = "ประเภท: กระเป๋าเงินเครดิต (วงเงิน: ${String.format("%,.0f", wallet.creditLimit)} ฿)"
-        }
 
         holder.btnEditWallet.setOnClickListener { onEditClick(wallet) }
         holder.btnDeleteWallet.setOnClickListener { onDeleteClick(wallet) }
