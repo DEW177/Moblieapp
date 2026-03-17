@@ -11,7 +11,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="ยินดีต้อนรับกลับมา! 👋"
+        android:text="ยินดีต้อนรับ! 👋"
         android:textSize="28sp"
         android:textStyle="bold"
         android:textColor="#333333"
@@ -74,6 +74,9 @@
             android:maxLines="1"
             android:singleLine="true"
             android:lines="1"
+            android:scrollHorizontally="true"
+            android:paddingTop="0dp"
+            android:paddingBottom="0dp"
             android:gravity="center_vertical"
             android:paddingStart="16dp"/>
     </com.google.android.material.textfield.TextInputLayout>
