@@ -9,5 +9,6 @@ data class Transaction(
     var note: String = "",
     var date: String = "",
     var walletId: String = "",
-    var toWalletId: String? = null
+    var toWalletId: String? = null,
+    val timestamp: Long = 0L
 )

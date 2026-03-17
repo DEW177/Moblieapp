@@ -180,7 +180,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                             val walletId = doc.get("walletId")?.toString() ?: ""
                             val toWalletId = doc.get("toWalletId")?.toString()
 
-                            tList.add(Transaction(id, type, amount, category, note, date, walletId, toWalletId))
+                            // 🔥 เพิ่มการดึงค่า timestamp
+                            val timestamp = doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
+
+                            // 🔥 ใส่ timestamp เข้าไปใน Transaction
+                            tList.add(Transaction(id, type, amount, category, note, date, walletId, toWalletId, timestamp))
                         }
                         allTransactions = tList
 
@@ -244,11 +248,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val today = calendar.get(Calendar.DAY_OF_MONTH)
         val maxDaysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
 
-        // กำหนดเป้าหมายว่าเป็นรายรับ (1) หรือ รายจ่าย (2) ตามปุ่มที่เลือกอยู่
         val targetType = if (isShowingExpenseChart) 2 else 1
         val dailyAmounts = FloatArray(maxDaysInMonth + 1)
 
-        // รวมยอดเงินแยกตามวัน
         for (t in allTransactions) {
             if (t.type == targetType) {
                 val parts = t.date.split("/")
@@ -264,7 +266,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
         }
 
-        // 🔥 แก้ Logic เป็นยอดรายวัน (Daily Spikes) ตรงนี้เลยครับ!
         val entries = ArrayList<Entry>()
         for (day in 1..today) {
             entries.add(Entry(day.toFloat(), dailyAmounts[day]))
@@ -413,15 +414,17 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             return
         }
 
-        // 🔥 แปลง String เป็น Date แล้วจัดเรียงจากวันที่ใหม่สุด (Descending) ไปเก่าสุด
         val sdf = java.text.SimpleDateFormat("d/M/yyyy", java.util.Locale.getDefault())
-        val recentList = allTransactions.sortedByDescending { t ->
-            try {
-                sdf.parse(t.date)?.time ?: 0L
-            } catch (e: Exception) {
-                0L
-            }
-        }.take(4)
+        // 🔥 เรียงตามวันที่ก่อน ถ้าตรงกันให้เรียงตามเวลาที่บันทึก
+        val recentList = allTransactions.sortedWith(
+            compareByDescending<Transaction> { t ->
+                try {
+                    sdf.parse(t.date)?.time ?: 0L
+                } catch (e: Exception) {
+                    0L
+                }
+            }.thenByDescending { it.timestamp }
+        ).take(4)
 
         for (t in recentList) {
             val row = LinearLayout(requireContext())
