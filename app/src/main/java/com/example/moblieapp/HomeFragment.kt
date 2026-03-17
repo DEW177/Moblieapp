@@ -244,9 +244,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val today = calendar.get(Calendar.DAY_OF_MONTH)
         val maxDaysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
 
+        // กำหนดเป้าหมายว่าเป็นรายรับ (1) หรือ รายจ่าย (2) ตามปุ่มที่เลือกอยู่
         val targetType = if (isShowingExpenseChart) 2 else 1
         val dailyAmounts = FloatArray(maxDaysInMonth + 1)
 
+        // รวมยอดเงินแยกตามวัน
         for (t in allTransactions) {
             if (t.type == targetType) {
                 val parts = t.date.split("/")
@@ -262,14 +264,10 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
         }
 
-        var cumulativeSum = 0f
+        // 🔥 แก้ Logic เป็นยอดรายวัน (Daily Spikes) ตรงนี้เลยครับ!
         val entries = ArrayList<Entry>()
-        entries.add(Entry(1f, dailyAmounts[1]))
-        cumulativeSum += dailyAmounts[1]
-
-        for (day in 2..today) {
-            cumulativeSum += dailyAmounts[day]
-            entries.add(Entry(day.toFloat(), cumulativeSum))
+        for (day in 1..today) {
+            entries.add(Entry(day.toFloat(), dailyAmounts[day]))
         }
 
         val dataSet = LineDataSet(entries, "")
@@ -281,7 +279,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         dataSet.circleRadius = 4f
         dataSet.setDrawCircleHole(true)
         dataSet.valueTextSize = 0f
-        dataSet.mode = LineDataSet.Mode.CUBIC_BEZIER
+        dataSet.mode = LineDataSet.Mode.HORIZONTAL_BEZIER
+        dataSet.cubicIntensity = 0.2f
         dataSet.setDrawFilled(true)
         dataSet.fillColor = chartColor
         dataSet.fillAlpha = 50
@@ -414,7 +413,15 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             return
         }
 
-        val recentList = allTransactions.sortedByDescending { it.date }.reversed().take(4)
+        // 🔥 แปลง String เป็น Date แล้วจัดเรียงจากวันที่ใหม่สุด (Descending) ไปเก่าสุด
+        val sdf = java.text.SimpleDateFormat("d/M/yyyy", java.util.Locale.getDefault())
+        val recentList = allTransactions.sortedByDescending { t ->
+            try {
+                sdf.parse(t.date)?.time ?: 0L
+            } catch (e: Exception) {
+                0L
+            }
+        }.take(4)
 
         for (t in recentList) {
             val row = LinearLayout(requireContext())
