@@ -140,7 +140,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         val dbFire = FirebaseFirestore.getInstance()
 
-        // ดึงข้อมูลกระเป๋าเงินแบบ Real-time
         dbFire.collection("users").document(userId).collection("wallets")
             .addSnapshotListener { walletSnapshots, wError ->
                 if (wError != null || walletSnapshots == null || !isAdded) return@addSnapshotListener
@@ -153,7 +152,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                         "balance" to 0.0,
                         "creditLimit" to 0.0
                     ))
-                    return@addSnapshotListener // สั่ง return ไปก่อน เดี๋ยวพอมันสร้างเสร็จ Snapshot จะดึงข้อมูลรอบใหม่มาโชว์ให้อัตโนมัติ
+                    return@addSnapshotListener
                 }
 
                 val wallets = mutableListOf<Wallet>()
@@ -166,7 +165,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     wallets.add(Wallet(id, name, type, balance, creditLimit))
                 }
 
-                // ดึงข้อมูลธุรกรรมแบบ Real-time
                 dbFire.collection("users").document(userId).collection("transactions")
                     .addSnapshotListener { transSnapshots, tError ->
                         if (tError != null || transSnapshots == null || !isAdded) return@addSnapshotListener
@@ -186,24 +184,19 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                         }
                         allTransactions = tList
 
-                        // คำนวณยอดเงิน
                         var totalIncome = 0.0
                         var totalExpense = 0.0
                         val walletBalances = mutableMapOf<String, Double>()
-                        val walletTypes = mutableMapOf<String, Int>()
 
                         for (w in wallets) {
                             walletBalances[w.id] = w.balance
-                            walletTypes[w.id] = w.type
                         }
 
                         for (t in allTransactions) {
-                            val walletType = walletTypes[t.walletId] ?: 0
-
                             when (t.type) {
                                 1 -> {
                                     walletBalances[t.walletId] = (walletBalances[t.walletId] ?: 0.0) + t.amount
-                                    if (walletType == 0) totalIncome += t.amount
+                                    totalIncome += t.amount
                                 }
                                 2 -> {
                                     walletBalances[t.walletId] = (walletBalances[t.walletId] ?: 0.0) - t.amount
@@ -230,16 +223,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                             val currentBalance = walletBalances[w.id] ?: 0.0
                             val walletView = TextView(requireContext())
 
-                            if (w.type == 0) {
-                                walletView.text = "💰 ${w.name}: ${String.format("%,.2f", currentBalance)} ฿"
-                                walletView.setTextColor(Color.parseColor("#455A64"))
-                            } else {
-                                val debt = if (currentBalance < 0) currentBalance * -1 else 0.0
-                                val remainingCredit = w.creditLimit + currentBalance
-                                walletView.text = "💳 ${w.name}: รูดไป ${String.format("%,.2f", debt)} ฿\n    (วงเงินคงเหลือ: ${String.format("%,.2f", remainingCredit)} ฿)"
-                                walletView.setTextColor(Color.parseColor("#E57373"))
-                            }
-
+                            walletView.text = "💰 ${w.name}: ${String.format("%,.2f", currentBalance)} ฿"
+                            walletView.setTextColor(Color.parseColor("#455A64"))
                             walletView.textSize = 16f
                             walletView.setPadding(0, 0, 0, 16)
                             layoutWallets.addView(walletView)
@@ -380,10 +365,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             emptyView.text = "ไม่มีรายการใช้จ่าย"
             emptyView.gravity = Gravity.CENTER
             emptyView.setPadding(0, 20, 0, 20)
-
-            // 🔥 เปลี่ยนจาก .textColor = ... เป็น .setTextColor(...)
             emptyView.setTextColor(Color.parseColor("#888888"))
-
             layoutTopSpending.addView(emptyView)
             return
         }

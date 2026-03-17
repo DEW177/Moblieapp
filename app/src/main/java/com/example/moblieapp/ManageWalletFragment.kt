@@ -2,14 +2,10 @@ package com.example.moblieapp
 
 import android.app.AlertDialog
 import android.os.Bundle
-import android.text.InputType
 import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.Spinner
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -49,7 +45,7 @@ class ManageWalletFragment : Fragment(R.layout.fragment_manage_wallet) {
         val userId = auth.currentUser?.uid ?: return
         val db = FirebaseFirestore.getInstance()
 
-        // 🔥 ดึงข้อมูลกระเป๋าเงินจาก Firebase แบบ Real-time
+        // ดึงข้อมูลกระเป๋าเงินจาก Firebase แบบ Real-time
         db.collection("users").document(userId).collection("wallets")
             .addSnapshotListener { snapshots, e ->
                 if (e != null || snapshots == null || !isAdded) return@addSnapshotListener
@@ -78,63 +74,33 @@ class ManageWalletFragment : Fragment(R.layout.fragment_manage_wallet) {
         layout.setPadding(50, 40, 50, 10)
 
         val inputName = EditText(requireContext())
-        inputName.hint = "ชื่อกระเป๋า (เช่น KBank, บัตรเครดิต BBL)"
+        inputName.hint = "ชื่อกระเป๋า (เช่น เงินสด, KBank, SCB)"
         if (wallet != null) inputName.setText(wallet.name)
         layout.addView(inputName)
-
-        val typeOptions = arrayOf("กระเป๋าเงินขั้นพื้นฐาน", "กระเป๋าเงินเครดิต")
-        val spinner = Spinner(requireContext())
-        val spinnerAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, typeOptions)
-        spinner.adapter = spinnerAdapter
-        if (wallet != null) spinner.setSelection(wallet.type)
-        layout.addView(spinner)
-
-        val inputCreditLimit = EditText(requireContext())
-        inputCreditLimit.hint = "ใส่วงเงินบัตรเครดิต (เช่น 50000)"
-        inputCreditLimit.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-        inputCreditLimit.visibility = if (wallet?.type == 1) View.VISIBLE else View.GONE
-        if (wallet != null && wallet.type == 1 && wallet.creditLimit > 0) {
-            inputCreditLimit.setText(wallet.creditLimit.toString())
-        }
-
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                if (position == 1) {
-                    inputCreditLimit.visibility = View.VISIBLE
-                } else {
-                    inputCreditLimit.visibility = View.GONE
-                    inputCreditLimit.text.clear()
-                }
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-        layout.addView(inputCreditLimit)
 
         builder.setView(layout)
 
         builder.setPositiveButton("บันทึก") { _, _ ->
             val name = inputName.text.toString().trim()
-            val type = spinner.selectedItemPosition
-            val limitText = inputCreditLimit.text.toString()
-            val limit = if (type == 1 && limitText.isNotEmpty()) limitText.toDouble() else 0.0
 
             if (name.isNotEmpty()) {
                 val auth = FirebaseAuth.getInstance()
                 val userId = auth.currentUser?.uid ?: return@setPositiveButton
                 val db = FirebaseFirestore.getInstance()
 
-                // 🔥 เช็คว่าสร้างใหม่หรือแก้ไข
+                // เช็คว่าสร้างใหม่หรือแก้ไข
                 val walletRef = if (wallet == null || wallet.id.isEmpty()) {
                     db.collection("users").document(userId).collection("wallets").document() // สร้าง ID ใหม่
                 } else {
                     db.collection("users").document(userId).collection("wallets").document(wallet.id) // อัปเดต ID เดิม
                 }
 
+                // บังคับให้เป็นกระเป๋าธรรมดา (type = 0, creditLimit = 0.0) เสมอ
                 val walletData = hashMapOf(
                     "name" to name,
-                    "type" to type,
+                    "type" to 0,
                     "balance" to (wallet?.balance ?: 0.0),
-                    "creditLimit" to limit
+                    "creditLimit" to 0.0
                 )
 
                 // บันทึกขึ้น Firebase
@@ -160,7 +126,7 @@ class ManageWalletFragment : Fragment(R.layout.fragment_manage_wallet) {
             val userId = auth.currentUser?.uid ?: return@setPositiveButton
             val db = FirebaseFirestore.getInstance()
 
-            // 🔥 ลบข้อมูลจาก Firebase
+            // ลบข้อมูลจาก Firebase
             db.collection("users").document(userId).collection("wallets").document(wallet.id)
                 .delete()
                 .addOnSuccessListener {

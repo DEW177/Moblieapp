@@ -38,7 +38,7 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
     private lateinit var spinnerToWallet: Spinner
     private lateinit var tvToWalletLabel: TextView
     private var walletList = listOf<Wallet>()
-    private var selectedWalletIdFromEdit: String = "" // 🔥 เปลี่ยนเป็น String
+    private var selectedWalletIdFromEdit: String = ""
     private var isExpense: Boolean = true
     private var isTransfer: Boolean = false
     private var selectedCategory: String = ""
@@ -122,7 +122,7 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
                 }
 
                 edtNote.setText(bundle.getString("note", ""))
-                selectedWalletIdFromEdit = bundle.getString("walletId", "") // 🔥 เปลี่ยนเป็นรับ String
+                selectedWalletIdFromEdit = bundle.getString("walletId", "")
 
                 val dateStr = bundle.getString("date", "")
                 if (dateStr.isNotEmpty()) {
@@ -142,7 +142,6 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         loadWallets()
     }
 
-    // 🔥 เปลี่ยนมาดึงกระเป๋าจาก Firebase แทน Room
     private fun loadWallets() {
         val auth = FirebaseAuth.getInstance()
         val userId = auth.currentUser?.uid ?: return
@@ -161,19 +160,14 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
                     wallets.add(Wallet(id, name, type, balance, creditLimit))
                 }
 
-                // ถ้ายังไม่มีกระเป๋าเลย ให้สร้างให้ 3 ใบอัตโนมัติ
-
-
                 walletList = wallets
                 updateWalletSpinner()
 
-                // ตั้งค่า Spinner ตามข้อมูลที่กด Edit มา
-                val allWalletNames = walletList.map { if (it.type == 0) "💰 ${it.name}" else "💳 ${it.name}" }
+                val allWalletNames = walletList.map { "💰 ${it.name}" }
                 spinnerToWallet.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, allWalletNames)
 
                 if (selectedWalletIdFromEdit.isNotEmpty()) {
-                    val filteredWallets = if (isExpense || isTransfer) walletList else walletList.filter { it.type == 0 }
-                    val selectedIndex = filteredWallets.indexOfFirst { it.id == selectedWalletIdFromEdit }
+                    val selectedIndex = walletList.indexOfFirst { it.id == selectedWalletIdFromEdit }
                     if (selectedIndex >= 0) spinnerWallet.setSelection(selectedIndex)
                 }
 
@@ -189,8 +183,7 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
 
     private fun updateWalletSpinner() {
         if (walletList.isEmpty()) return
-        val filteredWallets = if (isExpense || isTransfer) walletList else walletList.filter { it.type == 0 }
-        val walletNames = filteredWallets.map { if (it.type == 0) "💰 ${it.name}" else "💳 ${it.name}" }
+        val walletNames = walletList.map { "💰 ${it.name}" }
         spinnerWallet.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, walletNames)
     }
 
@@ -418,11 +411,9 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         val userId = currentUser.uid
 
         val amount = amountText.toDouble()
-        val filteredWallets = if (isExpense || isTransfer) walletList else walletList.filter { it.type == 0 }
         val selectedWalletIndex = spinnerWallet.selectedItemPosition
 
-        // 🔥 ดึง ID แบบ String จากรายการกระเป๋า
-        val targetWalletId = if (selectedWalletIndex >= 0 && filteredWallets.isNotEmpty()) filteredWallets[selectedWalletIndex].id else ""
+        val targetWalletId = if (selectedWalletIndex >= 0 && walletList.isNotEmpty()) walletList[selectedWalletIndex].id else ""
 
         btnSave.isEnabled = false
 
