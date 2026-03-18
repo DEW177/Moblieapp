@@ -189,7 +189,11 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
 
     private fun setupListeners() {
         btnIncome.setOnClickListener {
-            if (currentTransactionId.isNotEmpty() && isTransfer) return@setOnClickListener
+            // 🔥 ดักไว้ว่าถ้ากำลังแก้ไข (มี ID) ห้ามเปลี่ยนประเภท
+            if (currentTransactionId.isNotEmpty()) {
+                Toast.makeText(requireContext(), "ไม่สามารถเปลี่ยนประเภทรายการขณะแก้ไขได้", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             isExpense = false
             isTransfer = false
             updateTypeSelection()
@@ -197,7 +201,11 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         }
 
         btnExpense.setOnClickListener {
-            if (currentTransactionId.isNotEmpty() && isTransfer) return@setOnClickListener
+            // 🔥 ดักไว้ว่าถ้ากำลังแก้ไข (มี ID) ห้ามเปลี่ยนประเภท
+            if (currentTransactionId.isNotEmpty()) {
+                Toast.makeText(requireContext(), "ไม่สามารถเปลี่ยนประเภทรายการขณะแก้ไขได้", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             isExpense = true
             isTransfer = false
             updateTypeSelection()
@@ -205,7 +213,11 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         }
 
         btnTransfer.setOnClickListener {
-            if (currentTransactionId.isNotEmpty() && isTransfer) return@setOnClickListener
+            // 🔥 ดักไว้ว่าถ้ากำลังแก้ไข (มี ID) ห้ามเปลี่ยนประเภท
+            if (currentTransactionId.isNotEmpty()) {
+                Toast.makeText(requireContext(), "ไม่สามารถเปลี่ยนประเภทรายการขณะแก้ไขได้", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             isTransfer = true
             updateTypeSelection()
             updateWalletSpinner()
