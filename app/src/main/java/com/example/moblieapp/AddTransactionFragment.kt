@@ -409,16 +409,13 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
         }
 
         val userId = currentUser.uid
-
         val amount = amountText.toDouble()
         val selectedWalletIndex = spinnerWallet.selectedItemPosition
-
         val targetWalletId = if (selectedWalletIndex >= 0 && walletList.isNotEmpty()) walletList[selectedWalletIndex].id else ""
 
         btnSave.isEnabled = false
 
         val db = FirebaseFirestore.getInstance()
-
         val transactionRef = if (currentTransactionId.isEmpty()) {
             db.collection("users").document(userId).collection("transactions").document()
         } else {
@@ -435,25 +432,32 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
                 return
             }
 
-            val transactionData = hashMapOf(
+            // 🔥 ลบ timestamp ออกจากก้อนข้อมูลเริ่มต้น
+            val transactionData = mutableMapOf<String, Any>(
                 "type" to 3,
                 "amount" to amount,
                 "category" to "โอนเงิน",
                 "note" to edtNote.text.toString(),
                 "date" to selectedDate,
                 "walletId" to targetWalletId,
-                "toWalletId" to toWalletId,
-                "timestamp" to FieldValue.serverTimestamp()
+                "toWalletId" to toWalletId
             )
 
-            transactionRef.set(transactionData)
-                .addOnSuccessListener {
-                    btnSave.isEnabled = true
-                    val safeContext = context ?: return@addOnSuccessListener
-                    val msg = if (currentTransactionId.isEmpty()) "โอนเงินเรียบร้อย" else "อัปเดตข้อมูลเรียบร้อย"
-                    Toast.makeText(safeContext, msg, Toast.LENGTH_SHORT).show()
-                    parentFragmentManager.popBackStack()
-                }
+            // 🔥 แยกเงื่อนไข: ถ้าสร้างใหม่ให้ใส่ timestamp แล้วใช้ set() | ถ้าแก้ของเดิมให้ใช้ update() ข้อมูลเฉยๆ
+            val task = if (currentTransactionId.isEmpty()) {
+                transactionData["timestamp"] = FieldValue.serverTimestamp()
+                transactionRef.set(transactionData)
+            } else {
+                transactionRef.update(transactionData)
+            }
+
+            task.addOnSuccessListener {
+                btnSave.isEnabled = true
+                val safeContext = context ?: return@addOnSuccessListener
+                val msg = if (currentTransactionId.isEmpty()) "โอนเงินเรียบร้อย" else "อัปเดตข้อมูลเรียบร้อย"
+                Toast.makeText(safeContext, msg, Toast.LENGTH_SHORT).show()
+                parentFragmentManager.popBackStack()
+            }
                 .addOnFailureListener { e ->
                     btnSave.isEnabled = true
                     Toast.makeText(context, "ผิดพลาด: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -461,24 +465,31 @@ class AddTransactionFragment : Fragment(R.layout.fragment_add_transaction) {
             return
         }
 
-        val transactionData = hashMapOf(
+        // 🔥 ลบ timestamp ออกจากก้อนข้อมูลเริ่มต้น
+        val transactionData = mutableMapOf<String, Any>(
             "type" to if (isExpense) 2 else 1,
             "amount" to amount,
             "category" to selectedCategory,
             "note" to edtNote.text.toString(),
             "date" to selectedDate,
-            "walletId" to targetWalletId,
-            "timestamp" to FieldValue.serverTimestamp()
+            "walletId" to targetWalletId
         )
 
-        transactionRef.set(transactionData)
-            .addOnSuccessListener {
-                btnSave.isEnabled = true
-                val safeContext = context ?: return@addOnSuccessListener
-                val msg = if (currentTransactionId.isEmpty()) "บันทึกเรียบร้อย" else "อัปเดตข้อมูลเรียบร้อย"
-                Toast.makeText(safeContext, msg, Toast.LENGTH_SHORT).show()
-                parentFragmentManager.popBackStack()
-            }
+        // 🔥 แยกเงื่อนไขสร้างใหม่ (set) กับแก้ไข (update)
+        val task = if (currentTransactionId.isEmpty()) {
+            transactionData["timestamp"] = FieldValue.serverTimestamp()
+            transactionRef.set(transactionData)
+        } else {
+            transactionRef.update(transactionData)
+        }
+
+        task.addOnSuccessListener {
+            btnSave.isEnabled = true
+            val safeContext = context ?: return@addOnSuccessListener
+            val msg = if (currentTransactionId.isEmpty()) "บันทึกเรียบร้อย" else "อัปเดตข้อมูลเรียบร้อย"
+            Toast.makeText(safeContext, msg, Toast.LENGTH_SHORT).show()
+            parentFragmentManager.popBackStack()
+        }
             .addOnFailureListener { e ->
                 btnSave.isEnabled = true
                 Toast.makeText(context, "ผิดพลาด: ${e.message}", Toast.LENGTH_SHORT).show()
