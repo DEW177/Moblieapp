@@ -31,12 +31,12 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:stateListAnimator="@null"
             android:text="🏠\nภาพรวม"
             android:textAllCaps="false"
             android:textColor="#546E7A"
-            android:textSize="12sp" />
+            android:textSize="12sp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:stateListAnimator="@null"/>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAddMain"
@@ -63,24 +63,24 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:stateListAnimator="@null"
             android:text="📄\nรายการธุรกรรม"
             android:textAllCaps="false"
             android:textColor="#546E7A"
-            android:textSize="12sp" />
+            android:textSize="12sp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:stateListAnimator="@null"/>
 
         <Button
             android:id="@+id/btnProfile"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:stateListAnimator="@null"
             android:text="👤\nโปรไฟล์"
             android:textAllCaps="false"
             android:textColor="#546E7A"
-            android:textSize="12sp" />
+            android:textSize="12sp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:stateListAnimator="@null"/>
 
     </LinearLayout>
 </RelativeLayout>
